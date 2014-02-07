@@ -5,7 +5,7 @@ A system for sharing secrets using Shamir's Secret Sharing Scheme.
 
 ## Sample Usage
 
-#### Creating secrets from strings
+#### Creating secrets from ascii strings
 
     >>> from secretsharing.shamir import Secret
     >>> secret = Secret.from_printable_ascii("Hello, world!")
@@ -14,9 +14,13 @@ A system for sharing secrets using Shamir's Secret Sharing Scheme.
     >>> secret.as_int()
     43142121247394322427211362L
 
+#### Creating secrets from hex private keys
+
+    >>> secret = Secret.from_hex("c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a")
+
 #### Creating secrets from integers
 
-	>>> secret = Secret(43142121247394322427211362L)
+    >>> secret = Secret(43142121247394322427211362L)
 
 #### Spliting secrets into shares
 
