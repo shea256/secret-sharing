@@ -1,4 +1,4 @@
-secretsharing
+Secret Sharing
 =============
 
 A system for sharing secrets using Shamir's Secret Sharing Scheme.
