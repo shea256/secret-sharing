@@ -24,6 +24,9 @@ def mod_inverse(k, prime):
         r = egcd(prime, k)[2]
     return (prime + r) % prime
 
+def get_smallest_257bit_prime():
+    return (2**256 + 297)
+
 def get_mersenne_primes():
     """ Returns all the mersenne primes with less than 500 digits.
         All primes:
@@ -50,7 +53,8 @@ def get_large_enough_prime(batch):
     """ Returns a prime number that is greater all the numbers in the batch.
     """
     # build a list of primes
-    primes = get_mersenne_primes()
+    primes = get_mersenne_primes() + [get_smallest_257bit_prime()]
+    primes.sort()
     # find a prime that is greater than all the numbers in the batch
     for prime in primes:
         numbers_greater_than_prime = [i for i in batch if i > prime]
