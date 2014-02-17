@@ -7,7 +7,43 @@
     :license: MIT, see LICENSE for more details.
 """
 
-import random
+import os
+from math import ceil
+
+def dev_random_entropy(numbytes):
+    return open("/dev/random", "rb").read(numbytes)
+
+def dev_urandom_entropy(numbytes):
+    return open("/dev/urandom", "rb").read(numbytes)
+
+def get_entropy(numbytes):
+    if os.name == 'nt':
+        return os.urandom(numbytes)
+    else:
+        return dev_random_entropy(numbytes)
+
+def fit_num_in_range(num, lower_bound, upper_bound):
+    """ Fits the number so that it is greater than or equal to the lower bound
+        and less than the upper bound.
+    """
+    assert(isinstance(upper_bound, (int, long))
+        and isinstance(lower_bound, (int, long)) and upper_bound > lower_bound)
+    value_range = upper_bound - lower_bound
+    offset = num % value_range
+    return offset + lower_bound
+
+def randint(min_value, max_value):
+    """ Chooses a random integer between min_value and max_value, inclusive.
+        Range of values: [min_value, max_value]
+    """
+    if not (isinstance(min_value, int) and isinstance(min_value, int)):
+        raise ValueError('min and max must be integers')
+    value_range = max_value - min_value
+    numbytes_of_entropy = int(ceil(value_range.bit_length()/8.0))
+    entropy = get_entropy(numbytes_of_entropy)
+    rand_int = int(entropy.encode('hex'), 16)
+    fitted_int = fit_num_in_range(rand_int, min_value, max_value+1)
+    return fitted_int
 
 def egcd(a, b):
     if a == 0:
@@ -69,7 +105,9 @@ def random_polynomial(degree, intercept, upper_bound):
         raise ValueError('Degree must be a non-negative number.')
     coefficients = [intercept]
     for i in range(degree):
-        random_coeff = random.randint(0, upper_bound-1)
+        random_coeff = randint(0, upper_bound-1)
+
+        random_coeff = randint(0, upper_bound-1)
         coefficients.append(random_coeff)
     return coefficients
 

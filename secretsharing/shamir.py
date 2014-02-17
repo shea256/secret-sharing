@@ -11,7 +11,7 @@ import string
 from characters.charset import charset_to_int, int_to_charset
 from characters.hex import hex_to_int, int_to_hex, is_hex
 
-from .math import get_large_enough_prime, random_polynomial, \
+from .utils import get_large_enough_prime, random_polynomial, \
     get_polynomial_points, modular_lagrange_interpolation
 
 def share_to_point(share):
