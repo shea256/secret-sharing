@@ -107,8 +107,6 @@ def random_polynomial(degree, intercept, upper_bound):
     coefficients = [intercept]
     for i in range(degree):
         random_coeff = randint(0, upper_bound-1)
-
-        random_coeff = randint(0, upper_bound-1)
         coefficients.append(random_coeff)
     return coefficients
 
