@@ -7,6 +7,6 @@
     :license: MIT, see LICENSE for more details.
 """
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 from .shamir import Secret
