@@ -19,7 +19,7 @@ setup(
     ],
     zip_safe=False,
     install_requires=[
-        'characters>=0.1',
+        'characters>=0.1.1',
     ],
     classifiers=[
         'Intended Audience :: Developers',
