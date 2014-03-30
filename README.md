@@ -47,4 +47,7 @@ A system for sharing secrets using Shamir's Secret Sharing Scheme.
 
     >>> recovered_shares = ['2-dqqXbFouiv6aztG', '3-2NuD3PS2me78j8mo','4-C4WafUspLBCcd8H']
     >>> recovered_secret = Secret.from_shares(recovered_shares, share_enc='b58')
-    >>> recovered_secret.as_printable_ascii()
+    >>> print recovered_secret.as_printable_ascii()
+    'Hello, world!'
+
+You can also use integers or (a modification of) [the NATO phonetic alphabet](http://en.wikipedia.org/wiki/NATO_phonetic_alphabet] with `share_enc='int'` or `share_enc='nato'`.
