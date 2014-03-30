@@ -128,15 +128,15 @@ def get_polynomial_points(coefficients, num_points, prime):
     return points
 
 def modular_lagrange_interpolation(x, points, prime):
-	# break the points up into lists of x and y values
+    # break the points up into lists of x and y values
     x_values, y_values = zip(*points)
     # initialize f(x) and begin the calculation: f(x) = SUM( y_i * l_i(x) )
     f_x = long(0)
     for i in range(len(points)):
-    	# evaluate the lagrange basis polynomial l_i(x)
+        # evaluate the lagrange basis polynomial l_i(x)
         numerator, denominator = 1, 1
         for j in range(len(points)):
-        	# don't compute a polynomial fraction if i equals j
+            # don't compute a polynomial fraction if i equals j
             if i == j: continue
             # compute a fraction and update the existing numerator + denominator
             numerator = (numerator * (x - x_values[j])) % prime
