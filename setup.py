@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name='secretsharing',
-    version='0.1.3',
+    version='0.1.4',
     url='https://github.com/halfmoonlabs/secretsharing',
     license='MIT',
     author='Halfmoon Labs',
@@ -18,9 +18,6 @@ setup(
         'secretsharing',
     ],
     zip_safe=False,
-    install_requires=[
-        'characters>=0.1.1',
-    ],
     classifiers=[
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
