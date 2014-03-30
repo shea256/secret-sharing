@@ -19,10 +19,6 @@ class ShamirSharingTest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def secret_message_to_shares(secret_message):
-        # FIXME?
-        return shares
-
     def test_short_secret(self):
         secret_message = 'Hello, world!'
         secret = Secret.from_printable_ascii(secret_message)
@@ -41,6 +37,22 @@ class ShamirSharingTest(unittest.TestCase):
         shares = secret.split(3, 5, share_enc='b58')
         assert(secret.as_printable_ascii() == 'Hello, world!')
         assert(Secret.from_shares(shares[0:3], share_enc='b58').as_b58() == secret_message)
+
+    def test_int_secret(self):
+        secret_message = 'Hello, world!'
+        secret = Secret.from_printable_ascii(secret_message)
+        shares = secret.split(3, 5, share_enc='int')
+        assert(secret.as_printable_ascii() == secret_message)
+        assert(Secret.from_shares(shares[0:3],
+               share_enc='int').as_printable_ascii() == secret_message)
+
+    def test_nato_secret(self):
+        secret_message = 'Hello, world!'
+        secret = Secret.from_printable_ascii(secret_message)
+        shares = secret.split(3, 5, share_enc='nato')
+        assert(secret.as_printable_ascii() == secret_message)
+        assert(Secret.from_shares(shares[0:3],
+               share_enc='nato').as_printable_ascii() == secret_message)
 
 def test_main():
 
