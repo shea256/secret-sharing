@@ -5,30 +5,47 @@ Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sha
 
 ## Sample Usage
 
-#### Splitting up a hex secret into shares
+### Hex Secrets
+
+#### Splitting into shares
 
     >>> from secretsharing import SecretSharer
     >>> secret = "c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a"
     >>> sharer = SecretSharer()
-    >>> shares = sharer.split_secret(secret, 3, 5)
-    ['1-2253a55f531283ea44e6616fb6edae5ad78edbbb8c10225e38c6f474fa76df64', '2-7175dcede9247604dd3ed59cc7f95c975f6d1432dc8ed26d2a5b3a5d4b058b28', '3-b22271cb80ff73b5886334e3bfd939987330e875d28304b0ae6c78f4c68f9cad', '4-e45963f81aa37cfc46537f449e8d455e12da58846decb928c4fab03b6d1513f3', '5-81ab373b61091d9170fb4bf64157fe83e69645eaecbefd56e05e0313e95efd1']
+    >>> shares = sharer.split_secret(secret, 2, 3)
+    ['1-58cbd30524507e7a198bdfeb69c8d87fd7d2c10e8d5408851404f7d258cbcea7', '2-ecdbdaea89d75f8e73bde77a46db821cd40f430d39a11c864e5a4868dcb403ed', '3-80ebe2cfef5e40a2cdefef0923ee2bb9d04bc50be5ee308788af98ff609c380a']
 
-#### Recovering a hex secret from shares
+#### Recovering from shares
 
     >>> sharer.recover_secret(shares[0:3])
     'c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a'
 
-#### Splitting up a text secret into hex shares
+### Plaintext Secrets
 
+#### Splitting into shares
+
+    >>> from secretsharing import PlaintextToHexSecretSharer
     >>> secret = "correct horse battery staple"
     >>> sharer = PlaintextToHexSecretSharer()
     >>> shares = sharer.split_secret(secret, 2, 3)
     ['1-7da6b11af146449675780434f6589230a3435d9ab59910354205996f508b8d0d', '2-fb4d6235e28c892cea70367c15ec3cbfed4cf4a417bd01e9812980f3ac97ddc8', '3-78f41350d3d2cdc35f6868c3357fe74f37568bad79e0f39dc04d687808a42d5a']
 
-#### Splitting up a Bitcoin private key into reliably transcribable shares
+#### Recovering from shares
 
+    >>> sharer.recover_secret(shares[0:2])
+    'correct horse battery staple'
+
+### Bitcoin Private Keys
+
+#### Splitting into reliably transcribable shares
+
+    >>> from secretsharing import BitcoinSecretSharer
     >>> secret = "5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS"
     >>> sharer = BitcoinSecretSharer()
     >>> shares = sharer.split_secret(secret, 2, 3)
     ['b-aweuzkm9jmfgd7x4k595bzcm3er3epf4dprfwzpprqa3exbuocs9byn4owfuqbo', 'n-btetgqqu8doacarsbyfdzpyycyj6gfdeaaxrpfx33pdjk4ou1d5owjdmdi1iegm9', 'd-njh33f14q7smucmh8iq8uaewc8mzub3mzptrwsegfiz3hc1fozkkjtguc4trh6sq']
 
+#### Recovering from shares
+
+    >>> sharer.recover_secret(shares[0:2])
+    '5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS'    
