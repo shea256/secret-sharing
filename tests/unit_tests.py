@@ -34,7 +34,7 @@ class ShamirSharingTest(unittest.TestCase):
 
 	def test_ascii_to_hex_sharing(self):
 		secret = "correct horse battery staple"
-		sharer = WordsToHexSecretSharer()
+		sharer = PlaintextToHexSecretSharer()
 		recovered_secret = self.split_and_recover_secret(secret, sharer, 3, 5)
 		assert(recovered_secret == secret)
 

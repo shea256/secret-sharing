@@ -115,7 +115,7 @@ class HexToHexSecretSharer(SecretSharer):
     def __init__(self):
         SecretSharer.__init__(self, string.hexdigits[0:16], string.hexdigits[0:16])
 
-class WordsToHexSecretSharer(SecretSharer):
+class PlaintextToHexSecretSharer(SecretSharer):
     """ Good for converting secret messages into standard hex shares.
     """
     def __init__(self):
