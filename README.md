@@ -52,7 +52,7 @@ Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sha
 
 ### Raw integers
 
-#### Splitting into shares (expressed as integer points)
+#### Splitting into shares
 
     >>> from secretsharing import secret_int_to_points, points_to_secret_int
     >>> secret = 88985120633792790105905686761572077713049967498756747774697023364147812997770L
