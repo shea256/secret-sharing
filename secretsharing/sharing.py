@@ -9,9 +9,9 @@
 
 import string
 import charset
+
 from .charset import charset_to_int, int_to_charset
 from .primes import get_large_enough_prime
-
 from .polynomials import random_polynomial, \
     get_polynomial_points, modular_lagrange_interpolation
 
