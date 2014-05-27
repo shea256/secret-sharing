@@ -7,7 +7,7 @@
     :license: MIT, see LICENSE for more details.
 """
 
-__version__ = '0.1.3'
+__version__ = '0.2.0'
 
 from .sharing import *
 from .charset import charset_to_int, int_to_charset
