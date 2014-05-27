@@ -9,4 +9,5 @@
 
 __version__ = '0.1.3'
 
-from .shamir import Secret
+from .sharing import *
+from .charset import charset_to_int, int_to_charset
