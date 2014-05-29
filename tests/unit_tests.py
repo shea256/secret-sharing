@@ -20,65 +20,49 @@ class ShamirSharingTest(unittest.TestCase):
 	def tearDown(self):
 		pass
 
-	def split_and_recover_secret(self, secret, sharer, m, n):
-		shares = sharer.split_secret(secret, m, n)
+	def split_and_recover_secret(self, sharer_class, m, n, secret):
+		shares = sharer_class.split_secret(secret, m, n)
 		random.shuffle(shares)
-		recovered_secret = sharer.recover_secret(shares[0:m])
-		return recovered_secret
+		recovered_secret = sharer_class.recover_secret(shares[0:m])
+		assert(recovered_secret == secret)
 		
 	def test_hex_to_hex_sharing(self):
-		secret = "c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a"
-		sharer = SecretSharer()
-		recovered_secret = self.split_and_recover_secret(secret, sharer, 3, 5)
-		assert(recovered_secret == secret)
+		recovered_secret = self.split_and_recover_secret(SecretSharer, 3, 5,
+			"c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a")
 
 	def test_printable_ascii_to_hex_sharing(self):
-		secret = "correct horse battery staple"
-		sharer = PlaintextToHexSecretSharer()
-		recovered_secret = self.split_and_recover_secret(secret, sharer, 3, 5)
-		assert(recovered_secret == secret)
-
-	def test_b58_to_zb32_sharing(self):
-		secret = "5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS"
-		sharer = BitcoinToZB32SecretSharer()
-		recovered_secret = self.split_and_recover_secret(secret, sharer, 3, 5)
-		assert(recovered_secret == secret)
-
+		recovered_secret = self.split_and_recover_secret(PlaintextToHexSecretSharer, 3, 5,
+			"correct horse battery staple")
+	
 	def test_b58_to_b32_sharing(self):
-		secret = "5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS"
-		sharer = BitcoinToB32SecretSharer()
-		recovered_secret = self.split_and_recover_secret(secret, sharer, 3, 5)
-		assert(recovered_secret == secret)
-
+		recovered_secret = self.split_and_recover_secret(BitcoinToB32SecretSharer, 3, 5,
+			"5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS")
+	
+	def test_b58_to_zb32_sharing(self):
+		recovered_secret = self.split_and_recover_secret(BitcoinToZB32SecretSharer, 3, 5,
+			"5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS")
+	
 	def test_hex_to_base64_sharing(self):
-		secret = "c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a"
-		sharer = SecretSharer(secret_charset=base16_chars, share_charset=base64_chars)
-		recovered_secret = self.split_and_recover_secret(secret, sharer, 3, 5)
-		assert(recovered_secret == secret)
-
+		sharer_class = SecretSharer
+		sharer_class.share_charset = base64_chars
+		recovered_secret = self.split_and_recover_secret(sharer_class, 3, 5,
+			"c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a")
+	
 	def test_2_of_3_sharing(self):
-		secret = "c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a"
-		sharer = SecretSharer()
-		recovered_secret = self.split_and_recover_secret(secret, sharer, 2, 3)
-		assert(recovered_secret == secret)
-
+		recovered_secret = self.split_and_recover_secret(SecretSharer, 2, 3,
+			"c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a")
+	
 	def test_4_of_7_sharing(self):
-		secret = "c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a"
-		sharer = SecretSharer()
-		recovered_secret = self.split_and_recover_secret(secret, sharer, 4, 7)
-		assert(recovered_secret == secret)
-
+		recovered_secret = self.split_and_recover_secret(SecretSharer, 4, 7,
+			"c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a")
+	
 	def test_5_of_9_sharing(self):
-		secret = "c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a"
-		sharer = SecretSharer()
-		recovered_secret = self.split_and_recover_secret(secret, sharer, 5, 9)
-		assert(recovered_secret == secret)
+		recovered_secret = self.split_and_recover_secret(SecretSharer, 5, 9,
+			"c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a")
 
 	def test_2_of_2_sharing(self):
-		secret = "c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a"
-		sharer = SecretSharer()
-		recovered_secret = self.split_and_recover_secret(secret, sharer, 2, 2)
-		assert(recovered_secret == secret)
+		recovered_secret = self.split_and_recover_secret(SecretSharer, 2, 2,
+			"c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a")
 
 def test_main():
 

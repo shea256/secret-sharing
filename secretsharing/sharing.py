@@ -88,49 +88,53 @@ class SecretSharer():
         character set of the secrets and the character set of the shares that it
         expects to be dealing with.
     """
-    def __init__(self, secret_charset=string.hexdigits[0:16],
-                 share_charset=string.hexdigits[0:16]):
-        self.secret_charset = secret_charset
-        self.share_charset = share_charset
+    secret_charset = string.hexdigits[0:16]
+    share_charset = string.hexdigits[0:16]
 
-    def split_secret(self, secret_string, share_threshold, num_shares):
-        secret_int = charset_to_int(secret_string, self.secret_charset)
+    def __init__(self):
+        pass
+
+    @classmethod
+    def split_secret(cls, secret_string, share_threshold, num_shares):
+        secret_int = charset_to_int(secret_string, cls.secret_charset)
         points = secret_int_to_points(secret_int, share_threshold, num_shares)
         shares = []
         for point in points:
-            shares.append(point_to_share_string(point, self.share_charset))
+            shares.append(point_to_share_string(point, cls.share_charset))
         return shares
 
-    def recover_secret(self, shares):
+    @classmethod
+    def recover_secret(cls, shares):
         points = []
         for share in shares:
-            points.append(share_string_to_point(share, self.share_charset))
+            points.append(share_string_to_point(share, cls.share_charset))
         secret_int = points_to_secret_int(points)
-        secret_string = int_to_charset(secret_int, self.secret_charset)
+        secret_string = int_to_charset(secret_int, cls.secret_charset)
         return secret_string
 
 class HexToHexSecretSharer(SecretSharer):
     """ Standard sharer for converting hex secrets to hex shares.
     """
-    def __init__(self):
-        SecretSharer.__init__(self, string.hexdigits[0:16], string.hexdigits[0:16])
+    secret_charset = string.hexdigits[0:16]
+    share_charset = string.hexdigits[0:16]
 
 class PlaintextToHexSecretSharer(SecretSharer):
     """ Good for converting secret messages into standard hex shares.
     """
-    def __init__(self):
-        SecretSharer.__init__(self, string.printable, string.hexdigits[0:16])
+    secret_charset = string.printable
+    share_charset = string.hexdigits[0:16]
 
 class BitcoinToB32SecretSharer(SecretSharer):
     """ Good for converting Bitcoin secret keys into shares that can be
         reliably and conveniently transcribed.
     """
-    def __init__(self):
-        SecretSharer.__init__(self, charset.base58_chars, charset.base32_chars)
+    secret_charset = charset.base58_chars
+    share_charset = charset.base32_chars
 
 class BitcoinToZB32SecretSharer(SecretSharer):
     """ Good for converting Bitcoin secret keys into shares that can be
         reliably and conveniently transcribed.
     """
-    def __init__(self):
-        SecretSharer.__init__(self, charset.base58_chars, charset.zbase32_chars)
+    secret_charset = charset.base58_chars
+    share_charset = charset.zbase32_chars
+
