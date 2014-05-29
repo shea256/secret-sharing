@@ -63,3 +63,17 @@ Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sha
 
     >>> points_to_secret_int(shares[0:2])
     88985120633792790105905686761572077713049967498756747774697023364147812997770L
+
+### Custom formats
+
+#### Splitting into shares
+
+    >>> from secretsharing import SecretSharer, base64_chars, base16_chars
+    >>> sharer = SecretSharer(secret_charset=base16_chars, share_charset=base64_chars)
+    >>> shares = sharer.split_secret("c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a", 2, 3)
+    ['B-JpxCTUQ9D+q93JglQM9yRinI2Cyxe92FTBSYa93ppfY', 'C-HAmR0pjHuHwL4rozXnFY05ysIJVqtf3pob1HCMaaZUm', 'D-EXbhV+1SYQ1Z6NxBfBM/YQ+PaP4j8B5N92X1pa9LJJ0']
+
+#### Recovering from shares
+
+    >>> sharer.recover_secret(shares[0:2])
+    'c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a'

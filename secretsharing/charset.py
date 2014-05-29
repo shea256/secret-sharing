@@ -42,6 +42,11 @@ def change_charset(s, original_charset, target_charset):
     output_string = int_to_charset(intermediate_integer, target_charset)
     return output_string
 
+""" Base16 includes numeric digits and the letters a through f. Here,
+    we use the lowecase letters.
+"""
+base16_chars = string.hexdigits[0:16]
+
 """ The Base58 character set allows for strings that avoid visual ambiguity
     when typed. It consists of all the alphanumeric characters except for
     "0", "O", "I", and "l", which look similar in some fonts.

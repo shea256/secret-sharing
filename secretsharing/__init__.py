@@ -10,4 +10,4 @@
 __version__ = '0.2.0'
 
 from .sharing import *
-from .charset import charset_to_int, int_to_charset
+from .charset import *
