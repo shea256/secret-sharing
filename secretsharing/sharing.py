@@ -121,7 +121,14 @@ class PlaintextToHexSecretSharer(SecretSharer):
     def __init__(self):
         SecretSharer.__init__(self, string.printable, string.hexdigits[0:16])
 
-class BitcoinSecretSharer(SecretSharer):
+class BitcoinToB32SecretSharer(SecretSharer):
+    """ Good for converting Bitcoin secret keys into shares that can be
+        reliably and conveniently transcribed.
+    """
+    def __init__(self):
+        SecretSharer.__init__(self, charset.base58_chars, charset.base32_chars)
+
+class BitcoinToZB32SecretSharer(SecretSharer):
     """ Good for converting Bitcoin secret keys into shares that can be
         reliably and conveniently transcribed.
     """

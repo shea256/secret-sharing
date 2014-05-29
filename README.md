@@ -37,12 +37,20 @@ Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sha
 
 ### Bitcoin Private Keys
 
-#### Splitting into reliably transcribable shares
+#### Splitting into reliably transcribable b32 shares
 
-    >>> from secretsharing import BitcoinSecretSharer
+    >>> from secretsharing import BitcoinToB32SecretSharer
     >>> secret = "5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS"
-    >>> sharer = BitcoinSecretSharer()
-    >>> shares = sharer.split_secret(secret, 2, 3)
+    >>> b32_sharer = BitcoinToB32SecretSharer()
+    >>> shares = b32_sharer.split_secret(secret, 2, 3)
+    ['B-RJ6Y56OSUWDY5VAAGC6XLSTM64CAJ2LPBNB7NKATJCWC7VSHIP5DQIVMR6OGJ4GB', 'C-CT5R24XAR5B732JWYQKSYOYBSF5VHI73HLY24QCFRJR5XUW64C4JWYN6SRGWVCUG', 'D-T54KX27OPEAGZ7TNK5WOFK4WFPZKEXUHNKPWLWDXZQNYPT3WPV3P5IGQTD7HAJDG']
+
+#### Splitting into reliably transcribable zb32 shares
+
+    >>> from secretsharing import BitcoinToZB32SecretSharer
+    >>> secret = "5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS"
+    >>> zb32_sharer = BitcoinToZB32SecretSharer()
+    >>> shares = zb32_sharer.split_secret(secret, 2, 3)
     ['b-aweuzkm9jmfgd7x4k595bzcm3er3epf4dprfwzpprqa3exbuocs9byn4owfuqbo', 'n-btetgqqu8doacarsbyfdzpyycyj6gfdeaaxrpfx33pdjk4ou1d5owjdmdi1iegm9', 'd-njh33f14q7smucmh8iq8uaewc8mzub3mzptrwsegfiz3hc1fozkkjtguc4trh6sq']
 
 #### Recovering from shares

@@ -32,7 +32,7 @@ class ShamirSharingTest(unittest.TestCase):
 		recovered_secret = self.split_and_recover_secret(secret, sharer, 3, 5)
 		assert(recovered_secret == secret)
 
-	def test_ascii_to_hex_sharing(self):
+	def test_printable_ascii_to_hex_sharing(self):
 		secret = "correct horse battery staple"
 		sharer = PlaintextToHexSecretSharer()
 		recovered_secret = self.split_and_recover_secret(secret, sharer, 3, 5)
@@ -40,7 +40,19 @@ class ShamirSharingTest(unittest.TestCase):
 
 	def test_b58_to_zb32_sharing(self):
 		secret = "5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS"
-		sharer = BitcoinSecretSharer()
+		sharer = BitcoinToZB32SecretSharer()
+		recovered_secret = self.split_and_recover_secret(secret, sharer, 3, 5)
+		assert(recovered_secret == secret)
+
+	def test_b58_to_b32_sharing(self):
+		secret = "5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS"
+		sharer = BitcoinToB32SecretSharer()
+		recovered_secret = self.split_and_recover_secret(secret, sharer, 3, 5)
+		assert(recovered_secret == secret)
+
+	def test_hex_to_base64_sharing(self):
+		secret = "c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a"
+		sharer = SecretSharer(secret_charset=base16_chars, share_charset=base64_chars)
 		recovered_secret = self.split_and_recover_secret(secret, sharer, 3, 5)
 		assert(recovered_secret == secret)
 
