@@ -15,7 +15,7 @@ Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sha
 
 #### Recovering from shares
 
-    >>> SecretSharer.recover_secret(shares[0:3])
+    >>> SecretSharer.recover_secret(shares[0:2])
     'c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a'
 
 ### Plaintext Secrets
