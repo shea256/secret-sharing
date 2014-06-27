@@ -9,7 +9,8 @@
 
 import string
 
-from .charset import charset_to_int, int_to_charset
+from .charset import charset_to_int, int_to_charset, base58_chars, \
+    base32_chars, zbase32_chars
 from .primes import get_large_enough_prime
 from .polynomials import random_polynomial, \
     get_polynomial_points, modular_lagrange_interpolation
@@ -127,13 +128,13 @@ class BitcoinToB32SecretSharer(SecretSharer):
     """ Good for converting Bitcoin secret keys into shares that can be
         reliably and conveniently transcribed.
     """
-    secret_charset = charset.base58_chars
-    share_charset = charset.base32_chars
+    secret_charset = base58_chars
+    share_charset = base32_chars
 
 class BitcoinToZB32SecretSharer(SecretSharer):
     """ Good for converting Bitcoin secret keys into shares that can be
         reliably and conveniently transcribed.
     """
-    secret_charset = charset.base58_chars
-    share_charset = charset.zbase32_chars
+    secret_charset = base58_chars
+    share_charset = zbase32_chars
 
