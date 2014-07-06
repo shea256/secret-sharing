@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name='secretsharing',
-    version='0.2.4',
+    version='0.2.5',
     url='https://github.com/rxl/secret-sharing',
     license='MIT',
     author='Halfmoon Labs',
