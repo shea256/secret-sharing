@@ -1,7 +1,11 @@
 SecretSharing
 =============
 
-Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sharing scheme
+Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sharing scheme.
+
+## Installation
+
+    >>> pip install secretsharing
 
 ## Sample Usage
 
