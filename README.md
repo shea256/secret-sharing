@@ -33,24 +33,26 @@ Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sha
 
 ### Bitcoin Private Keys
 
-#### Splitting into reliably transcribable b32 shares
+Note: Bitcoin private keys are in [Base58 check](https://en.bitcoin.it/wiki/Base58Check_encoding) format.
+
+#### Splitting into reliably transcribable [base32](http://en.wikipedia.org/wiki/Base32) shares
 
     >>> from secretsharing import BitcoinToB32SecretSharer
     >>> shares = BitcoinToB32SecretSharer.split_secret("5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS", 2, 3)
     ['B-RJ6Y56OSUWDY5VAAGC6XLSTM64CAJ2LPBNB7NKATJCWC7VSHIP5DQIVMR6OGJ4GB', 'C-CT5R24XAR5B732JWYQKSYOYBSF5VHI73HLY24QCFRJR5XUW64C4JWYN6SRGWVCUG', 'D-T54KX27OPEAGZ7TNK5WOFK4WFPZKEXUHNKPWLWDXZQNYPT3WPV3P5IGQTD7HAJDG']
 
-#### Recovering from b32 shares
+#### Recovering from base32 shares
 
     >>> BitcoinToB32SecretSharer.recover_secret(shares[0:2])
     '5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS'  
 
-#### Splitting into reliably transcribable zb32 shares
+#### Splitting into reliably transcribable [zbase32](http://philzimmermann.com/docs/human-oriented-base-32-encoding.txt) shares
 
     >>> from secretsharing import BitcoinToZB32SecretSharer
     >>> shares = BitcoinToZB32SecretSharer.split_secret("5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS", 2, 3)
     ['b-aweuzkm9jmfgd7x4k595bzcm3er3epf4dprfwzpprqa3exbuocs9byn4owfuqbo', 'n-btetgqqu8doacarsbyfdzpyycyj6gfdeaaxrpfx33pdjk4ou1d5owjdmdi1iegm9', 'd-njh33f14q7smucmh8iq8uaewc8mzub3mzptrwsegfiz3hc1fozkkjtguc4trh6sq']
 
-#### Recovering from zb32 shares
+#### Recovering from zbase32 shares
 
     >>> BitcoinToZB32SecretSharer.recover_secret(shares[0:2])
     '5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS'    
