@@ -124,6 +124,13 @@ class PlaintextToHexSecretSharer(SecretSharer):
     secret_charset = string.printable
     share_charset = string.hexdigits[0:16]
 
+class BitcoinToB58SecretSharer(SecretSharer):
+    """ Good for converting Bitcoin secret keys into shares that can be
+        reliably printed out in any font.
+    """
+    secret_charset = base58_chars
+    share_charset = base58_chars
+
 class BitcoinToB32SecretSharer(SecretSharer):
     """ Good for converting Bitcoin secret keys into shares that can be
         reliably and conveniently transcribed.
@@ -137,4 +144,6 @@ class BitcoinToZB32SecretSharer(SecretSharer):
     """
     secret_charset = base58_chars
     share_charset = zbase32_chars
+
+
 

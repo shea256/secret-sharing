@@ -41,6 +41,10 @@ class ShamirSharingTest(unittest.TestCase):
 	def test_b58_to_zb32_sharing(self):
 		recovered_secret = self.split_and_recover_secret(BitcoinToZB32SecretSharer, 3, 5,
 			"5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS")
+
+	def test_b58_to_b58_sharing(self):
+		recovered_secret = self.split_and_recover_secret(BitcoinToB58SecretSharer, 3, 5,
+			"5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS")
 	
 	def test_hex_to_base64_sharing(self):
 		sharer_class = SecretSharer

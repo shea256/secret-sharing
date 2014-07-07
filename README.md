@@ -39,6 +39,17 @@ Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sha
 
 Note: Bitcoin private keys are in [Base58 check](https://en.bitcoin.it/wiki/Base58Check_encoding) format.
 
+#### Splitting into reliably printable base58 shares
+
+    >>> from secretsharing import BitcoinToB58SecretSharer
+    >>> shares = BitcoinToB58SecretSharer.split_secret("5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS", 2, 3)
+    ['2-Bqni1ysZcXhFBhVVJLQgPimDUJrjBrzuvBmc6gPNPh1jyDcvM6uYUuH', '3-9xpMBerBCdHLKzCQ82fjVLfZ3Qt48sqa6nz1E3cc6eu3qUe58vaogU3', '4-85qzMKpnnisRUGuJwivnaxZtcWuP5tgEHQCQMQqqocnMhjfDvkG4t2o']
+
+#### Recovering from base58 shares
+
+    >>> BitcoinToB58SecretSharer.recover_secret(shares[0:2])
+    '5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS'
+
 #### Splitting into reliably transcribable [base32](http://en.wikipedia.org/wiki/Base32) shares
 
     >>> from secretsharing import BitcoinToB32SecretSharer
