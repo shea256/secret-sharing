@@ -1,6 +1,10 @@
 SecretSharing
 =============
 
+[![Latest Version](https://pypip.in/version/secretsharing/badge.svg)](https://pypi.python.org/pypi/secretsharing/)
+[![Downloads](https://pypip.in/download/secretsharing/badge.svg)](https://pypi.python.org/pypi/secretsharing/)
+[![License](https://pypip.in/license/secretsharing/badge.svg)](https://pypi.python.org/pypi/secretsharing>/)
+
 Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sharing scheme.
 
 ## Installation
