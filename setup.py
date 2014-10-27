@@ -9,7 +9,7 @@ from setuptools import setup
 setup(
     name='secretsharing',
     version='0.2.6',
-    url='https://github.com/rxl/secret-sharing',
+    url='https://github.com/onenameio/secret-sharing',
     license='MIT',
     author='Halfmoon Labs',
     author_email='hello@halfmoon.io',
