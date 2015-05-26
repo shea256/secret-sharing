@@ -1,9 +1,9 @@
 SecretSharing
 =============
 
-[![Latest Version](https://pypip.in/version/secretsharing/badge.svg)](https://pypi.python.org/pypi/secretsharing/)
-[![Downloads](https://pypip.in/download/secretsharing/badge.svg)](https://pypi.python.org/pypi/secretsharing/)
-[![License](https://pypip.in/license/secretsharing/badge.svg)](https://pypi.python.org/pypi/secretsharing>/)
+[![PyPI](https://img.shields.io/pypi/v/secretsharing.svg)](https://pypi.python.org/pypi/secretsharing/)
+[![PyPI](https://img.shields.io/pypi/dm/secretsharing.svg)](https://pypi.python.org/pypi/secretsharing/)
+[![PyPI](https://img.shields.io/pypi/l/secretsharing.svg)](https://github.com/onenameio/secret-sharing/blob/master/LICENSE)
 
 Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sharing scheme.
 
