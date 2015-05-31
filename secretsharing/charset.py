@@ -21,7 +21,7 @@ def int_to_charset(x, charset):
         x, digit = divmod(x, len(charset))
         output += charset[digit]
     # reverse the characters in the output and return
-    return output[::-1]
+    return output
 
 def charset_to_int(s, charset):
     """ Turn a string into a non-negative integer.
@@ -31,8 +31,10 @@ def charset_to_int(s, charset):
     if (set(s) - set(charset)):
         raise ValueError("s has chars that aren't in the charset.")
     output = 0
+    i=0
     for char in s:
-        output = output * len(charset) + charset.index(char)
+        output = output + (len(charset)**i)*charset.index(char)
+        i+=1
     return output
 
 def change_charset(s, original_charset, target_charset):

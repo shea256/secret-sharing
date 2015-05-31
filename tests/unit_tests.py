@@ -29,10 +29,18 @@ class ShamirSharingTest(unittest.TestCase):
 	def test_hex_to_hex_sharing(self):
 		recovered_secret = self.split_and_recover_secret(SecretSharer, 3, 5,
 			"c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a")
+   
+   	def test_hex_with_zero_to_hex_sharing(self):
+		recovered_secret = self.split_and_recover_secret(SecretSharer, 3, 5,
+			"000ac4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a")
 
 	def test_printable_ascii_to_hex_sharing(self):
 		recovered_secret = self.split_and_recover_secret(PlaintextToHexSecretSharer, 3, 5,
 			"correct horse battery staple")
+   
+   	def test_printable_with_zero_ascii_to_hex_sharing(self):
+		recovered_secret = self.split_and_recover_secret(PlaintextToHexSecretSharer, 3, 5,
+			"000correct horse battery staple")
 	
 	def test_b58_to_b32_sharing(self):
 		recovered_secret = self.split_and_recover_secret(BitcoinToB32SecretSharer, 3, 5,
