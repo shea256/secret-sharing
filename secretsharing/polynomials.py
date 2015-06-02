@@ -7,7 +7,7 @@
     :license: MIT, see LICENSE for more details.
 """
 
-from .entropy import randint
+from utilitybelt import secure_randint as randint
 
 
 def egcd(a, b):
