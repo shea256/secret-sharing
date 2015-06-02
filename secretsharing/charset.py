@@ -9,42 +9,6 @@
 
 import string
 
-
-def int_to_charset(x, charset):
-    """ Turn a non-negative integer into a string.
-    """
-    if not (isinstance(x, (int, long)) and x >= 0):
-        raise ValueError("x must be a non-negative integer.")
-    if x == 0:
-        return charset[0]
-    output = ""
-    while x > 0:
-        x, digit = divmod(x, len(charset))
-        output += charset[digit]
-    # reverse the characters in the output and return
-    return output[::-1]
-
-
-def charset_to_int(s, charset):
-    """ Turn a string into a non-negative integer.
-    """
-    if not isinstance(s, (str)):
-        raise ValueError("s must be a string.")
-    if (set(s) - set(charset)):
-        raise ValueError("s has chars that aren't in the charset.")
-    output = 0
-    for char in s:
-        output = output * len(charset) + charset.index(char)
-    return output
-
-
-def change_charset(s, original_charset, target_charset):
-    """ Convert a string from one charset to another.
-    """
-    intermediate_integer = charset_to_int(s, original_charset)
-    output_string = int_to_charset(intermediate_integer, target_charset)
-    return output_string
-
 """ Base16 includes numeric digits and the letters a through f. Here,
     we use the lowecase letters.
 """

@@ -9,8 +9,8 @@
 
 import string
 
-from .charset import charset_to_int, int_to_charset, base58_chars, \
-    base32_chars, zbase32_chars
+from utilitybelt import int_to_charset, charset_to_int
+from .charset import base58_chars, base32_chars, zbase32_chars
 from .primes import get_large_enough_prime
 from .polynomials import random_polynomial, \
     get_polynomial_points, modular_lagrange_interpolation
