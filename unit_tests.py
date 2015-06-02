@@ -7,11 +7,15 @@
     :license: MIT, see LICENSE for more details.
 """
 
+import random
 import unittest
 from test import test_support
-import random
-
-from secretsharing import *
+from utilitybelt import base64_chars
+from secretsharing import secret_int_to_points, points_to_secret_int, \
+    point_to_share_string, share_string_to_point, SecretSharer, \
+    HexToHexSecretSharer, PlaintextToHexSecretSharer, \
+    BitcoinToB58SecretSharer, BitcoinToB32SecretSharer, \
+    BitcoinToZB32SecretSharer
 
 
 class ShamirSharingTest(unittest.TestCase):
