@@ -9,6 +9,7 @@
 
 import string
 
+
 def int_to_charset(x, charset):
     """ Turn a non-negative integer into a string.
     """
@@ -23,6 +24,7 @@ def int_to_charset(x, charset):
     # reverse the characters in the output and return
     return output[::-1]
 
+
 def charset_to_int(s, charset):
     """ Turn a string into a non-negative integer.
     """
@@ -34,6 +36,7 @@ def charset_to_int(s, charset):
     for char in s:
         output = output * len(charset) + charset.index(char)
     return output
+
 
 def change_charset(s, original_charset, target_charset):
     """ Convert a string from one charset to another.

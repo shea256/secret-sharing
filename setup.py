@@ -13,7 +13,8 @@ setup(
     license='MIT',
     author='Halfmoon Labs',
     author_email='hello@halfmoon.io',
-    description="Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sharing scheme.",
+    description=("Tools for sharing secrets (like Bitcoin private keys), "
+                 "using shamir's secret sharing scheme."),
     packages=[
         'secretsharing',
     ],

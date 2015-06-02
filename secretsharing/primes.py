@@ -7,6 +7,7 @@
     :license: MIT, see LICENSE for more details.
 """
 
+
 def calculate_mersenne_primes():
     """ Returns all the mersenne primes with less than 500 digits.
         All primes:
@@ -36,6 +37,7 @@ STANDARD_PRIMES = calculate_mersenne_primes() + [
     SMALLEST_257BIT_PRIME, SMALLEST_321BIT_PRIME, SMALLEST_385BIT_PRIME
 ]
 STANDARD_PRIMES.sort()
+
 
 def get_large_enough_prime(batch):
     """ Returns a prime number that is greater all the numbers in the batch.
