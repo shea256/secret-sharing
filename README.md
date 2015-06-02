@@ -1,6 +1,7 @@
 SecretSharing
 =============
 
+[![Travis](https://img.shields.io/travis/onenameio/secret-sharing.svg)](https://travis-ci.org/onenameio/secret-sharing)
 [![PyPI](https://img.shields.io/pypi/v/secretsharing.svg)](https://pypi.python.org/pypi/secretsharing/)
 [![PyPI](https://img.shields.io/pypi/dm/secretsharing.svg)](https://pypi.python.org/pypi/secretsharing/)
 [![PyPI](https://img.shields.io/pypi/l/secretsharing.svg)](https://github.com/onenameio/secret-sharing/blob/master/LICENSE)
