@@ -1,4 +1,4 @@
-SecretSharing
+Secret Sharing
 =============
 
 [![CircleCI](https://img.shields.io/circleci/project/blockstack/secret-sharing.svg)](https://circleci.com/gh/blockstack/secret-sharing/5)
@@ -6,7 +6,7 @@ SecretSharing
 [![PyPI](https://img.shields.io/pypi/dm/secretsharing.svg)](https://pypi.python.org/pypi/secretsharing/)
 [![PyPI](https://img.shields.io/pypi/l/secretsharing.svg)](https://github.com/onenameio/secret-sharing/blob/master/LICENSE)
 
-Tools for sharing secrets (like Bitcoin private keys), using shamir's secret sharing scheme.
+A library for sharding and sharing secrets (like Bitcoin private keys), using shamir's secret sharing scheme.
 
 ## Installation
 
