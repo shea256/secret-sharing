@@ -19,10 +19,6 @@ setup(
         'secretsharing',
     ],
     zip_safe=False,
-    install_requires=[
-        'six',
-        'utilitybelt',
-    ],
     classifiers=[
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
