@@ -16,7 +16,7 @@ from .polynomials import random_polynomial, \
     get_polynomial_points, modular_lagrange_interpolation
 
 
-def secret_int_to_points(secret_int, point_threshold, num_points):
+def secret_int_to_points(secret_int, point_threshold, num_points, prime=None):
     """ Split a secret (integer) into shares (pair of integers / x,y coords).
 
         Sample the points of a random polynomial with the y intercept equal to
@@ -26,7 +26,8 @@ def secret_int_to_points(secret_int, point_threshold, num_points):
         raise ValueError("Threshold must be >= 2.")
     if point_threshold > num_points:
         raise ValueError("Threshold must be < the total number of points.")
-    prime = get_large_enough_prime([secret_int, num_points])
+    if not prime:
+        prime = get_large_enough_prime([secret_int, num_points])
     if not prime:
         raise ValueError("Error! Secret is too long for share calculation!")
     coefficients = random_polynomial(point_threshold-1, secret_int, prime)
@@ -34,7 +35,7 @@ def secret_int_to_points(secret_int, point_threshold, num_points):
     return points
 
 
-def points_to_secret_int(points):
+def points_to_secret_int(points, prime=None):
     """ Join int points into a secret int.
 
         Get the intercept of a random polynomial defined by the given points.
@@ -48,7 +49,8 @@ def points_to_secret_int(points):
                 isinstance(point[1], (int, long))):
             raise ValueError("Each value in the point must be an int.")
     x_values, y_values = zip(*points)
-    prime = get_large_enough_prime(y_values)
+    if not prime:
+        prime = get_large_enough_prime(y_values)
     free_coefficient = modular_lagrange_interpolation(0, points, prime)
     secret_int = free_coefficient  # the secret int is the free coefficient
     return secret_int
