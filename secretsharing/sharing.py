@@ -29,8 +29,8 @@ def secret_int_to_points(secret_int, point_threshold, num_points, prime=None):
         raise ValueError("Threshold must be < the total number of points.")
     if not prime:
         prime = get_large_enough_prime([secret_int, num_points])
-    if not prime:
-        raise ValueError("Error! Secret is too long for share calculation!")
+        if not prime:
+            raise ValueError("Error! Secret is too long for share calculation!")
     coefficients = random_polynomial(point_threshold-1, secret_int, prime)
     points = get_polynomial_points(coefficients, num_points, prime)
     return points
@@ -52,6 +52,8 @@ def points_to_secret_int(points, prime=None):
     x_values, y_values = zip(*points)
     if not prime:
         prime = get_large_enough_prime(y_values)
+        if not prime:
+            raise ValueError("Error! Point is too large for share calculation!")
     free_coefficient = modular_lagrange_interpolation(0, points, prime)
     secret_int = free_coefficient  # the secret int is the free coefficient
     return secret_int
