@@ -1,3 +1,0 @@
-six>=1.10
-utilitybelt>=0.2.6
-wheel==0.24.0
