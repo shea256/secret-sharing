@@ -49,7 +49,7 @@ def get_polynomial_points(coefficients, num_points, prime):
         y = coefficients[0]
         # calculate each term and add it to y, using modular math
         for i in range(1, len(coefficients)):
-            exponentiation = (long(x)**i) % prime
+            exponentiation = (x**i) % prime
             term = (coefficients[i] * exponentiation) % prime
             y = (y + term) % prime
         # add the point to the list of points
@@ -61,7 +61,7 @@ def modular_lagrange_interpolation(x, points, prime):
     # break the points up into lists of x and y values
     x_values, y_values = zip(*points)
     # initialize f(x) and begin the calculation: f(x) = SUM( y_i * l_i(x) )
-    f_x = long(0)
+    f_x = 0
     for i in range(len(points)):
         # evaluate the lagrange basis polynomial l_i(x)
         numerator, denominator = 1, 1

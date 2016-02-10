@@ -9,6 +9,7 @@
 
 import string
 
+from six import integer_types
 from utilitybelt import int_to_charset, charset_to_int, base58_chars, \
     base32_chars, zbase32_chars
 from .primes import get_large_enough_prime
@@ -45,8 +46,8 @@ def points_to_secret_int(points, prime=None):
     for point in points:
         if not isinstance(point, tuple) and len(point) == 2:
             raise ValueError("Each point must be a tuple of two values.")
-        if not (isinstance(point[0], (int, long)) and
-                isinstance(point[1], (int, long))):
+        if not (isinstance(point[0], integer_types) and
+                isinstance(point[1], integer_types)):
             raise ValueError("Each value in the point must be an int.")
     x_values, y_values = zip(*points)
     if not prime:
@@ -65,8 +66,8 @@ def point_to_share_string(point, charset):
         raise ValueError(
             'The character "-" cannot be in the supplied charset.')
     if not (isinstance(point, tuple) and len(point) == 2 and
-            isinstance(point[0], (int, long)) and
-            isinstance(point[1], (int, long))):
+            isinstance(point[0], integer_types) and
+            isinstance(point[1], integer_types)):
         raise ValueError(
             'Point format is invalid. Must be a pair of integers.')
     x, y = point
