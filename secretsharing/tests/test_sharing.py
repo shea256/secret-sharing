@@ -31,6 +31,11 @@ def split_and_recover_secret(sharer_class, m, n, secret):
     for i in range(n - m):
         recovered_secret = sharer_class.recover_secret(shares[i:m+i])
         assert(recovered_secret == secret)
+        recovered_secret = sharer_class.recover_secret(shares[i:m+i+1])
+        assert(recovered_secret == secret)
+        unrecovered_secret = sharer_class.recover_secret(shares[i:m+i-1])
+        assert(unrecovered_secret != secret)
+
 
 @pytest.mark.parametrize(['m', 'n'], splits)
 def test_hex_to_hex_sharing(m, n):
