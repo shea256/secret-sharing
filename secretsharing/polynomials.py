@@ -1,12 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-    Secret Sharing
-    ~~~~~
-
-    :copyright: (c) 2014 by Halfmoon Labs
-    :license: MIT, see LICENSE for more details.
-"""
-
 import random
 
 

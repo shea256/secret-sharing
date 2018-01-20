@@ -1,18 +1,10 @@
-# -*- coding: utf-8 -*-
-"""
-    Secret Sharing
-    ~~~~~
-    :copyright: (c) 2015 by Halfmoon Labs
-    :license: MIT, see LICENSE for more details.
-"""
-
-import six
+from six import integer_types
 
 
 def int_to_charset(x, charset):
     """ Turn a non-negative integer into a string.
     """
-    if not (isinstance(x, six.integer_types) and x >= 0):
+    if not (isinstance(x, integer_types) and x >= 0):
         raise ValueError("x must be a non-negative integer.")
     if x == 0:
         return charset[0]
@@ -20,7 +12,6 @@ def int_to_charset(x, charset):
     while x > 0:
         x, digit = divmod(x, len(charset))
         output += charset[digit]
-    # reverse the characters in the output and return
     return output
 
 
@@ -31,23 +22,8 @@ def charset_to_int(s, charset):
         raise ValueError("s must be a string.")
     if (set(s) - set(charset)):
         raise ValueError("s has chars that aren't in the charset.")
-    output = 0
-    i=0
-    for char in s:
-        output = output + (len(charset)**i)*charset.index(char)
-        i+=1
-    return output
+    return sum(len(charset)**i * charset.index(char) for i, char in enumerate(s))
 
-
-def change_charset(s, original_charset, target_charset):
-    """ Convert a string from one charset to another.
-    """
-    if not isinstance(s, str):
-        raise ValueError('"s" must be a string.')
-
-    intermediate_integer = charset_to_int(s, original_charset)
-    output_string = int_to_charset(intermediate_integer, target_charset)
-    return output_string
 
 
 """ Base16 includes numeric digits and the letters a through f. Here,

@@ -1,16 +1,7 @@
-# -*- coding: utf-8 -*-
-"""
-    Secret Sharing
-    ~~~~~
-
-    :copyright: (c) 2014 by Halfmoon Labs
-    :license: MIT, see LICENSE for more details.
-"""
-
 import random
 import pytest
 
-from ..charset import base64_chars
+from ..charset import base32_chars, base58_chars, base64_chars, int_to_charset, charset_to_int
 from .. import (secret_int_to_points, points_to_secret_int,
     point_to_share_string, share_string_to_point, SecretSharer,
     HexToHexSecretSharer, PlaintextToHexSecretSharer,
@@ -37,20 +28,32 @@ def split_and_recover_secret(sharer_class, m, n, secret):
         assert(unrecovered_secret != secret)
 
 
+@pytest.mark.parametrize('charset', [base32_chars, base58_chars, base64_chars],
+                         ids=lambda x: 'Base' + str(len(x)))
+def test_int_to_charset(charset):
+    for i in range(30, 100, 4):
+        secret_int = 2**i + 3*i + 7
+        secret_str = int_to_charset(secret_int, charset)
+        assert secret_int == charset_to_int(secret_str, charset)
+
+
 @pytest.mark.parametrize(['m', 'n'], splits)
 def test_hex_to_hex_sharing(m, n):
     split_and_recover_secret(SecretSharer, m, n,
         "c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a")
+
 
 @pytest.mark.parametrize(['m', 'n'], splits)
 def test_printable_ascii_to_hex_sharing(m, n):
     split_and_recover_secret(PlaintextToHexSecretSharer, m, n,
         "0000correct horse battery staple")
 
+
 @pytest.mark.parametrize(['m', 'n'], splits)
 def test_btc_sharing(btc_sharer_class, m, n):
     split_and_recover_secret(btc_sharer_class, m, n,
         "5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS")
+
 
 @pytest.mark.parametrize(['m', 'n'], splits)
 def test_hex_to_base64_sharing(m, n):
