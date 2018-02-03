@@ -91,7 +91,7 @@ def share_string_to_point(share_string, charset):
         raise ValueError("Share has characters that aren't in the charset.")
     x = charset_to_int(x_string, charset)
     y = charset_to_int(y_string, charset)
-    return (x, y)
+    return x, y
 
 
 class SecretSharer():
@@ -110,10 +110,7 @@ class SecretSharer():
     def split_secret(cls, secret_string, share_threshold, num_shares):
         secret_int = charset_to_int(secret_string, cls.secret_charset)
         points = secret_int_to_points(secret_int, share_threshold, num_shares)
-        shares = []
-        for point in points:
-            shares.append(point_to_share_string(point, cls.share_charset))
-        return shares
+        return cls.points_to_shares(points)
 
     @classmethod
     def recover_secret(cls, shares):
@@ -123,6 +120,13 @@ class SecretSharer():
         secret_int = points_to_secret_int(points)
         secret_string = int_to_charset(secret_int, cls.secret_charset)
         return secret_string
+
+    @classmethod
+    def points_to_shares(cls, points):
+        shares = []
+        for point in points:
+            shares.append(point_to_share_string(point, cls.share_charset))
+        return shares
 
 
 class HexToHexSecretSharer(SecretSharer):
@@ -161,3 +165,50 @@ class BitcoinToZB32SecretSharer(SecretSharer):
     """
     secret_charset = base58_chars
     share_charset = zbase32_chars
+
+
+class SecretSharerNew(SecretSharer):
+    """
+    This class can be used to generate new shares for a secret once some
+    shares have already been generated. eg. Alice decides to shard her secret
+    in 5-of-10, later she decides that 10 more shares should be generated for
+    the same secret making it 5-of-15. Any of the old shares and the newly
+    generated shares can be used together
+    """
+    def __init__(self):
+        # Holds information for each secret
+        self.secrets = {}
+
+    def generate_shares(self, secret_string, share_threshold, num_shares,
+                        max_shares=1000):
+        if max_shares > 1000:
+            raise ValueError('Why do you want greater than 1000 shares')
+        if secret_string not in self.secrets:
+            self._generate_and_record_params_for_secret(secret_string,
+                                                        share_threshold,
+                                                        max_shares)
+        secret_int, prime, coefficients = self._get_params_for_secret(
+            secret_string)
+        points = get_polynomial_points(coefficients, num_shares, prime)
+        return self.points_to_shares(points)
+
+    def _generate_and_record_params_for_secret(self, secret_string,
+                                               share_threshold, max_shares):
+        secret_int = charset_to_int(secret_string, self.secret_charset)
+        prime = get_large_enough_prime([secret_int, max_shares])
+        coefficients = random_polynomial(share_threshold - 1, secret_int, prime)
+        self._record_params_for_secret(secret_string, secret_int, prime,
+                                       coefficients)
+
+    def _record_params_for_secret(self, secret_string, secret_int, prime,
+                                  coefficients):
+        self.secrets[secret_string] = {
+            'int': secret_int,
+            'prime': prime,
+            'coefficients': coefficients
+        }
+
+    def _get_params_for_secret(self, secret_string):
+        return self.secrets[secret_string]['int'], \
+               self.secrets[secret_string]['prime'], \
+               self.secrets[secret_string]['coefficients']
