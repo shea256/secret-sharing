@@ -64,5 +64,9 @@ class Generator():
         hex_data = binascii.hexlify(data)
         return self.get_secrets_hex_string(hex_data,min_consensus_node,total_number_of_node)
 
+class Recoverer():
+    def recover_secret_from_valid_chunk(self,secrets):
+        return SecretSharer.recover_secret(secrets)
+
 
     
