@@ -5,7 +5,10 @@ Secret Sharing
 [![PyPI](https://img.shields.io/pypi/v/secretsharing.svg)](https://pypi.python.org/pypi/secretsharing/)
 [![PyPI](https://img.shields.io/pypi/dm/secretsharing.svg)](https://pypi.python.org/pypi/secretsharing/)
 [![PyPI](https://img.shields.io/pypi/l/secretsharing.svg)](https://github.com/onenameio/secret-sharing/blob/master/LICENSE)
-[![Slack](http://slack.blockstack.org/badge.svg)](http://slack.blockstack.org/)
+
+
+# Fork Notice
+We found that the pypi verion of this library was out of sync with the github one. Hence Covalent Foundation is forking this and will be maintaining it from now on.
 
 A library for sharding and sharing secrets (like Bitcoin private keys), using shamir's secret sharing scheme.
 
