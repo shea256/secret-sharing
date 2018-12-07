@@ -42,7 +42,7 @@ class Generator(object):
         for i in range(data_len): 
             temp_data = temp_data + data[i]  
 
-            if (i+1)%chunk_size == 0 : 
+            if (i+1) % chunk_size == 0 : 
                 hex_temp_data = binascii.hexlify(temp_data) 
                 chunkSecrets = self.get_secrets_from_hex_string(hex_temp_data, min_consensus_node, total_number_of_node) 
 
@@ -56,7 +56,7 @@ class Generator(object):
                 isEmpty = False 
                 temp_data = "" 
 
-        if data_len%chunk_size != 0: 
+        if data_len % chunk_size != 0: 
             hex_temp_data = binascii.hexlify(temp_data) 
             chunkSecrets = self.get_secrets_from_hex_string(hex_temp_data, min_consensus_node, total_number_of_node) 
 
@@ -101,6 +101,3 @@ class Recoverer(object):
             recovered_data += sub_key 
 
         return str(recovered_data) 
-
-
-    
