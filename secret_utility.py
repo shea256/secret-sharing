@@ -5,7 +5,7 @@ from data_validator import is_valid
 
 
 class Generator(object): 
-    def is_valid_length(self,data): 
+    def is_valid_length(self, data): 
         if len(data) > 320 : 
             return False 
 
@@ -18,7 +18,7 @@ class Generator(object):
         if all(c in string.hexdigits for c in data) == False: 
             raise ValueError("Data must contain only hexdigits") 
 
-        return SecretSharer.split_secret(data,min_consensus_node,total_number_of_node) 
+        return SecretSharer.split_secret(data, min_consensus_node, total_number_of_node) 
 
     def get_secrets_from_hex_string(self, data, min_consensus_node, total_number_of_node): 
         data_len = len(data) 
@@ -33,7 +33,7 @@ class Generator(object):
         if is_valid(data) == False: 
             return "Data must contain only ascii character" 
 
-        secrets = [""]*total_number_of_node 
+        secrets = [""] * total_number_of_node 
         temp_data = "" 
         chunk_size = 160 
         isEmpty = True 
