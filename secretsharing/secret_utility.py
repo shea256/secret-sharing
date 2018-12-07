@@ -1,4 +1,4 @@
-from secretsharing.sharing import SecretSharer 
+from sharing import SecretSharer 
 import string 
 import binascii 
 from data_validator import is_valid 
