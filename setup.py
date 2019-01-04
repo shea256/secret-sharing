@@ -7,7 +7,7 @@ Secret Sharing
 from setuptools import setup
 
 setup(
-    name='sl_secretsharing',
+    name='sl-secret-sharing',
     version='0.2.6',
     url='https://github.com/springlabs/sl-secret-sharing',
     license='MIT',
