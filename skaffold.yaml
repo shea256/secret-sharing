@@ -1,0 +1,30 @@
+apiVersion: skaffold/v1beta2
+kind: Config
+build:
+  artifacts:
+  - image: changeme
+    context: .
+    docker: {}
+  tagPolicy:
+    envTemplate:
+      template: '{{.DOCKER_REGISTRY}}/springlabs/sl-secret-sharing:{{.VERSION}}'
+  local: {}
+deploy:
+  kubectl: {}
+profiles:
+- name: dev
+  build:
+    artifacts:
+    - docker: {}
+    tagPolicy:
+      envTemplate:
+        template: '{{.DOCKER_REGISTRY}}/springlabs/sl-secret-sharing:{{.DIGEST_HEX}}'
+    local: {}
+  deploy:
+    helm:
+      releases:
+      - name: sl-secret-sharing
+        chartPath: charts/sl-secret-sharing
+        setValueTemplates:
+          image.repository: '{{.DOCKER_REGISTRY}}/springlabs/sl-secret-sharing'
+          image.tag: '{{.DIGEST_HEX}}'
