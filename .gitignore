@@ -5,3 +5,5 @@ bin/
 lib/
 .pytest_cache/
 __pycache__/
+dist/
+sl_secretsharing.egg-info/
