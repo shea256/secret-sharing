@@ -34,7 +34,7 @@ pipeline {
 
     stage('Build') {
       when {
-        branch 'PR-*'
+        branch 'master'
       }
 
       steps {
@@ -58,7 +58,7 @@ pipeline {
 
     stage('upload to pypi') {
       when {
-        branch 'PR-*'
+        branch 'master'
       }
       steps {
         container('python') {
