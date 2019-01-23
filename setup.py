@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name='sl-secret-sharing',
-    version='0.2.6',
+    version='0.2.7',
     url='https://github.com/springlabs/sl-secret-sharing',
     license='MIT',
     author='Halfmoon Labs',
