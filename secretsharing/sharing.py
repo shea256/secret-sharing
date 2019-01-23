@@ -49,7 +49,7 @@ def points_to_secret_int(points, prime=None):
         if not (isinstance(point[0], integer_types) and
                 isinstance(point[1], integer_types)):
             raise ValueError("Each value in the point must be an int.")
-    x_values, y_values = zip(*points)
+    _, y_values = zip(*points)
     if not prime:
         prime = get_large_enough_prime(y_values)
     free_coefficient = modular_lagrange_interpolation(0, points, prime)
@@ -70,9 +70,9 @@ def point_to_share_string(point, charset):
             isinstance(point[1], integer_types)):
         raise ValueError(
             'Point format is invalid. Must be a pair of integers.')
-    x, y = point
-    x_string = int_to_charset(x, charset)
-    y_string = int_to_charset(y, charset)
+    x_val, y_val = point
+    x_string = int_to_charset(x_val, charset)
+    y_string = int_to_charset(y_val, charset)
     share_string = x_string + '-' + y_string
     return share_string
 
@@ -89,9 +89,9 @@ def share_string_to_point(share_string, charset):
     x_string, y_string = share_string.split('-')
     if (set(x_string) - set(charset)) or (set(y_string) - set(charset)):
         raise ValueError("Share has characters that aren't in the charset.")
-    x = charset_to_int(x_string, charset)
-    y = charset_to_int(y_string, charset)
-    return (x, y)
+    x_val = charset_to_int(x_string, charset)
+    y_val = charset_to_int(y_string, charset)
+    return (x_val, y_val)
 
 
 class SecretSharer():

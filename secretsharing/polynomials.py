@@ -21,10 +21,10 @@ def egcd(a, b):
 def mod_inverse(k, prime):
     k = k % prime
     if k < 0:
-        r = egcd(prime, -k)[2]
+        ret = egcd(prime, -k)[2]
     else:
-        r = egcd(prime, k)[2]
-    return (prime + r) % prime
+        ret = egcd(prime, k)[2]
+    return (prime + ret) % prime
 
 
 def random_polynomial(degree, intercept, upper_bound):

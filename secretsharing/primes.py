@@ -47,6 +47,7 @@ def get_large_enough_prime(batch):
     # find a prime that is greater than all the numbers in the batch
     for prime in primes:
         numbers_greater_than_prime = [i for i in batch if i > prime]
-        if len(numbers_greater_than_prime) == 0:
+#        if len(numbers_greater_than_prime) == 0:
+        if not numbers_greater_than_prime:
             return prime
     return None
