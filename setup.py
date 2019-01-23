@@ -7,16 +7,16 @@ Secret Sharing
 from setuptools import setup
 
 setup(
-    name='secretsharing',
-    version='0.2.6',
-    url='https://github.com/onenameio/secret-sharing',
+    name='nginsecretsharing',
+    version='0.3.0',
+    url='https://github.com/ginsburgnm/secret-sharing',
     license='MIT',
-    author='Halfmoon Labs',
-    author_email='hello@halfmoon.io',
+    author='nginsburg',
+    author_email='ginsburgnm@gmail.com',
     description=("Tools for sharing secrets (like Bitcoin private keys), "
                  "using shamir's secret sharing scheme."),
     packages=[
-        'secretsharing',
+        'nginsecretsharing',
     ],
     zip_safe=False,
     install_requires=[
