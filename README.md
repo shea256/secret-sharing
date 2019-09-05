@@ -1,11 +1,9 @@
 Secret Sharing
 =============
 
-[![CircleCI](https://img.shields.io/circleci/project/blockstack/secret-sharing.svg)](https://circleci.com/gh/blockstack/secret-sharing)
-[![PyPI](https://img.shields.io/pypi/v/secretsharing.svg)](https://pypi.python.org/pypi/secretsharing/)
-[![PyPI](https://img.shields.io/pypi/dm/secretsharing.svg)](https://pypi.python.org/pypi/secretsharing/)
-[![PyPI](https://img.shields.io/pypi/l/secretsharing.svg)](https://github.com/onenameio/secret-sharing/blob/master/LICENSE)
-[![Slack](http://slack.blockstack.org/badge.svg)](http://slack.blockstack.org/)
+[![PyPI](https://img.shields.io/pypi/v/nginsecretsharing.svg)](https://pypi.python.org/pypi/nginsecretsharing/)
+[![PyPI](https://img.shields.io/pypi/dm/nginsecretsharing.svg)](https://pypi.python.org/pypi/nginsecretsharing/)
+[![PyPI](https://img.shields.io/pypi/l/nginsecretsharing.svg)](https://github.com/ginsburgnm/nginsecret-sharing/blob/master/LICENSE)
 
 A library for sharding and sharing secrets (like Bitcoin private keys), using shamir's secret sharing scheme.
 
