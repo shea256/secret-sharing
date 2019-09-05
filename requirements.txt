@@ -3,7 +3,6 @@ certifi==2018.11.29
 chardet==3.0.4
 docutils==0.14
 idna==2.8
-pkg-resources==0.0.0
 pkginfo==1.5.0.1
 Pygments==2.3.1
 readme-renderer==24.0
