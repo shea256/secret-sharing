@@ -16,6 +16,7 @@ from .protocol import (
     FILE_KEY_LENGTH,
     MAX_CAPACITY,
     PROTECTION_FILE,
+    Backup,
     Recovered,
     combine,
     estimate_share_size,
@@ -57,34 +58,42 @@ def _confirm(args: argparse.Namespace, message: str) -> None:
         raise SystemExit("Cancelled.")
 
 
-def _report_export(backup, paths) -> None:
+def _report_export(backup: Backup, paths: Sequence[Path], *, qr: bool = False) -> None:
     print(f"Backup ID: {backup.backup_id}")
     print("Record the backup ID separately; it is public and lets you verify recovery later.")
     print(f"Wrote {len(paths)} shares, any {backup.threshold} recover the secret:")
     for path in paths:
         print(f"  {path}")
     print("Distribute the shares to separate places now; a full set together defeats the threshold.")
+    if qr:
+        skipped = sum(1 for path in paths if not path.with_suffix(".svg").exists())
+        if skipped:
+            print(f"{skipped} share(s) were too large for a single QR symbol; no SVG written for them.")
 
 
 def cmd_create(args: argparse.Namespace) -> int:
     capacity = None if args.capacity in (None, 0) else min(args.capacity, MAX_CAPACITY)
     if args.input:
         data = read_limited(args.input, MAX_CAPACITY)
-        size = estimate_share_size(len(data), capacity=capacity)
+        size = estimate_share_size(len(data), capacity=capacity, signed=args.signed)
         _confirm(
             args, f"{args.threshold}-of-{args.shares} shares of {len(data)} bytes, {size} bytes per share."
         )
-        backup = split_bytes(data, threshold=args.threshold, shares=args.shares, capacity=capacity)
+        backup = split_bytes(
+            data, threshold=args.threshold, shares=args.shares, capacity=capacity, signed=args.signed
+        )
     else:
         if not sys.stdin.isatty():
             raise SystemExit("Text secrets are read from a hidden terminal prompt; use --input for files.")
         first = getpass.getpass("Secret text (hidden): ")
         if getpass.getpass("Repeat secret text: ") != first:
             raise SystemExit("Entries differ; nothing written.")
-        size = estimate_share_size(len(first.encode("utf-8")), capacity=capacity)
+        size = estimate_share_size(len(first.encode("utf-8")), capacity=capacity, signed=args.signed)
         _confirm(args, f"{args.threshold}-of-{args.shares} shares, {size} bytes per share.")
-        backup = split_text(first, threshold=args.threshold, shares=args.shares, capacity=capacity)
-    _report_export(backup, export_backup(backup, args.out))
+        backup = split_text(
+            first, threshold=args.threshold, shares=args.shares, capacity=capacity, signed=args.signed
+        )
+    _report_export(backup, export_backup(backup, args.out, qr=args.qr), qr=args.qr)
     return 0
 
 
@@ -106,13 +115,18 @@ def cmd_create_file(args: argparse.Namespace) -> int:
     subprocess.run([tools[0], "-r", recipient, "-o", str(ciphertext), str(source)], check=True)
     file_hash = hashlib.sha256(read_limited(ciphertext, 1 << 40)).digest()
     backup = split_file_key(
-        key, threshold=args.threshold, shares=args.shares, file_format=1, file_hash=file_hash
+        key,
+        threshold=args.threshold,
+        shares=args.shares,
+        file_format=1,
+        file_hash=file_hash,
+        signed=args.signed,
     )
-    paths = export_backup(backup, out / "shares")
+    paths = export_backup(backup, out / "shares", qr=args.qr)
     print(f"Encrypted file: {ciphertext}")
     print(f"Ciphertext SHA-256: {file_hash.hex()}")
     print("Keep copies of the encrypted file; the shares alone cannot recover it.")
-    _report_export(backup, paths)
+    _report_export(backup, paths, qr=args.qr)
     return 0
 
 
@@ -126,8 +140,11 @@ def cmd_inspect(args: argparse.Namespace) -> int:
         )
         if info.file_format is not None:
             line += f", file format {info.file_format}, ciphertext sha256 {info.file_hash.hex()}"
-        if info.signature_algs:
-            line += f", signatures {list(info.signature_algs)} (not verified by this reader)"
+        if info.verified_signatures:
+            line += f", signatures verified {list(info.verified_signatures)}"
+        unverified = [a for a in info.signature_algs if a not in info.verified_signatures]
+        if unverified:
+            line += f", signatures NOT verified {unverified}"
         print(line)
     return 0
 
@@ -160,10 +177,8 @@ def cmd_verify(args: argparse.Namespace) -> int:
     )
     print(f"Recovery OK ({result.kind}, {len(result.data)} bytes). Backup ID {result.backup_id}, {identity}.")
     if result.protection == PROTECTION_FILE:
-        print(
-            f"Protects ciphertext sha256 {result.file_hash.hex()}"
-            + (" (matches the supplied file)." if args.file else "; pass --file to check a file.")
-        )
+        suffix = " (matches the supplied file)." if args.file else "; pass --file to check a file."
+        print(f"Protects ciphertext sha256 {result.file_hash.hex()}{suffix}")
     return 0
 
 
@@ -230,13 +245,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    def counts(p):
+    def counts(p: argparse.ArgumentParser) -> None:
         p.add_argument("--threshold", type=int, required=True, help="shares needed to recover")
         p.add_argument("--shares", type=int, required=True, help="total shares to create")
         p.add_argument("--out", required=True, help="new directory for share files")
         p.add_argument("--yes", action="store_true", help="skip the confirmation prompt")
+        p.add_argument("--signed", action="store_true", help="add an Ed25519 signature to every share")
+        p.add_argument(
+            "--qr", action="store_true", help="also write an SVG QR copy of each share (needs qrcode)"
+        )
 
-    def recovery(p):
+    def recovery(p: argparse.ArgumentParser) -> None:
         p.add_argument("shares", nargs="*", help="share files; omit to paste shares on stdin")
         p.add_argument("--expected-backup-id", help="independently recorded 64-hex backup ID")
         p.add_argument(

@@ -186,19 +186,26 @@ def _signed_shares(alg: int, sig_len: int, pk_len: int, unknown: bool = False):
     return out
 
 
-def test_signed_shares_refused_by_default_and_recoverable_with_override():
-    shares = _signed_shares(1, 64, 32)
+def test_fake_ed25519_signature_is_rejected():
+    from secretsharing import InvalidSignature
+
+    with pytest.raises(InvalidSignature):
+        inspect_share(_signed_shares(1, 64, 32)[0])
+
+
+def test_unsupported_algorithm_refused_by_default_and_recoverable_with_override():
+    shares = _signed_shares(2, 3309, 1952)
     with pytest.raises(UnsupportedSignature):
         inspect_share(shares[0])
     with pytest.raises(UnsupportedSignature):
         combine(shares)
-    info = inspect_share(shares[0], allow_unverified=[1])
-    assert info.signature_algs == (1,)
-    result = combine(shares, allow_unverified=[1])
+    info = inspect_share(shares[0], allow_unverified=[2])
+    assert info.signature_algs == (2,) and info.verified_signatures == ()
+    result = combine(shares, allow_unverified=[2])
     assert result.data == b"key!"
-    assert result.unverified_signatures == (1,)
+    assert result.unverified_signatures == (2,)
     with pytest.raises(UnsupportedSignature):
-        combine(shares, allow_unverified=[2])
+        combine(shares, allow_unverified=[1])
 
 
 def test_ml_dsa_lengths_and_unknown_alg():
@@ -257,3 +264,76 @@ def test_hypothesis_round_trip(data, threshold, extra, pad):
     backup = split_bytes(data, threshold=threshold, shares=threshold + extra, capacity=len(data) + pad)
     picked = sorted(secrets.SystemRandom().sample(backup.shares, threshold))
     assert combine(picked).data == data
+
+
+def test_signed_round_trip_and_tamper_detection():
+    from secretsharing import InvalidSignature
+
+    backup = split_text("signed secret", threshold=2, shares=3, signed=True)
+    assert len(decode(backup.shares[0])) == estimate_share_size(13, signed=True)
+    info = inspect_share(backup.shares[0])
+    assert info.signature_algs == (1,) and info.verified_signatures == (1,)
+    result = combine(backup.shares[1:])
+    assert result.text() == "signed secret" and result.unverified_signatures == ()
+    raw = bytearray(decode(backup.shares[0]))
+    raw[-1] ^= 0x01  # flip a signature bit; checksum still passes
+    with pytest.raises(InvalidSignature):
+        inspect_share(encode(bytes(raw)))
+    # Altering the share value and recomputing the checksum still fails the signature.
+    raw = bytearray(decode(backup.shares[0]))
+    descriptor_end = 25 + 1 + 32
+    raw[descriptor_end + 5] ^= 0x01
+    value_end = descriptor_end + 1 + 13 + 19
+    raw[value_end : value_end + 4] = protocol._checksum(
+        bytes(raw[:descriptor_end]), raw[descriptor_end], bytes(raw[descriptor_end + 1 : value_end])
+    )
+    with pytest.raises(InvalidSignature):
+        inspect_share(encode(bytes(raw)))
+
+
+def test_signature_stripping_is_detected():
+    backup = split_text("s", threshold=2, shares=2, signed=True)
+
+    def strip(share: str) -> bytes:
+        raw = decode(share)
+        return raw[:4] + b"\x00" + raw[5:25] + raw[25 + 1 + 32 : -64]  # drop alg ID, pubkey, signature
+
+    stripped = [strip(share) for share in backup.shares]
+    with pytest.raises(InvalidChecksum):  # descriptor changed, checksum covers it
+        inspect_share(encode(stripped[0]))
+    forged = []
+    for raw in stripped:
+        descriptor, index, value = raw[:25], raw[25], raw[26:-4]
+        forged.append(
+            encode(descriptor + bytes([index]) + value + protocol._checksum(descriptor, index, value))
+        )
+    assert inspect_share(forged[0]).signature_algs == ()
+    with pytest.raises(RecoveryError):  # digest covers the descriptor too
+        combine(forged)
+
+
+def test_custom_signer_and_verifier_for_algorithm_2():
+    from secretsharing import Signer
+
+    public = b"\x07" * 1952
+    calls = []
+
+    def fake_sign(message: bytes) -> bytes:
+        calls.append(message)
+        return hashlib.sha256(message).digest() * 103 + b"\x00" * 13  # 3309 bytes
+
+    def fake_verify(pk: bytes, message: bytes, signature: bytes) -> bool:
+        return pk == public and signature == fake_sign(message)
+
+    signer = Signer(2, public, fake_sign, fake_verify)
+    backup = split_bytes(b"pq", threshold=2, shares=2, signed=True, signers=[signer])
+    assert inspect_share(backup.shares[0], verifiers={2: fake_verify}).verified_signatures == (1, 2)
+    with pytest.raises(UnsupportedSignature):
+        combine(backup.shares)
+    partial = combine(backup.shares, allow_unverified=[2])
+    assert partial.data == b"pq" and partial.unverified_signatures == (2,)
+    assert combine(backup.shares, verifiers={2: fake_verify}).unverified_signatures == ()
+    with pytest.raises(ValueError):
+        Signer(9, public, fake_sign, fake_verify)
+    with pytest.raises(ValueError):
+        Signer(2, public[:10], fake_sign, fake_verify)

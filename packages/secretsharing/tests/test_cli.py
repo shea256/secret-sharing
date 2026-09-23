@@ -139,3 +139,34 @@ def test_export_readback_and_format(tmp_path):
     path = tmp_path / "s.ss.txt"
     path.write_text(text)
     assert run("inspect", path).stdout.startswith("s.ss.txt: share 1 of 2")
+
+
+def test_signed_create_and_qr(tmp_path):
+    pytest.importorskip("qrcode")
+    source = tmp_path / "s.bin"
+    source.write_bytes(b"\x01" * 32)
+    out = tmp_path / "signed"
+    run(
+        "create",
+        "--input",
+        source,
+        "--threshold",
+        "2",
+        "--shares",
+        "2",
+        "--out",
+        out,
+        "--yes",
+        "--signed",
+        "--qr",
+    )
+    files = sorted(out.glob("*.ss.txt"))
+    svgs = sorted(out.glob("*.svg"))
+    assert (
+        len(files) == 2
+        and len(svgs) == 2
+        and svgs[0].read_bytes().startswith(b"<?xml")
+        or b"<svg" in svgs[0].read_bytes()
+    )
+    assert "signatures verified [1]" in run("inspect", files[0]).stdout
+    assert run("combine", *files, "--stdout", stdin=b"").stdout == b"\x01" * 32

@@ -11,12 +11,16 @@ license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "Ryan Shea" }]
 dependencies = []
+
 classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Security :: Cryptography",
 ]
+
+[project.optional-dependencies]
+qr = ["qrcode>=8"]
 
 [project.urls]
 Homepage = "https://github.com/shea256/secret-sharing"

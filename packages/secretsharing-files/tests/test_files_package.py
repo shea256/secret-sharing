@@ -57,3 +57,54 @@ def test_cli(tmp_path):
     wrong = tmp_path / "wrong.age"
     wrong.write_bytes(b"nope")
     assert run("combine", shares[0], shares[1], "--file", wrong, "--out", tmp_path / "x").returncode == 1
+
+
+def test_post_quantum_cli_and_qr(tmp_path):
+    import pytest
+
+    pytest.importorskip("qrcode")
+    source = tmp_path / "small.bin"
+    source.write_bytes(b"pq" * 10)
+    out = tmp_path / "pq"
+    created = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "secretsharing_files",
+            "create",
+            "--file",
+            str(source),
+            "--threshold",
+            "2",
+            "--shares",
+            "2",
+            "--out",
+            str(out),
+            "--post-quantum",
+            "--qr",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert created.returncode == 0, created.stderr
+    shares = sorted(out.glob("*.ss.txt"))
+    assert not list(out.glob("*.svg"))  # ML-DSA shares exceed a single QR symbol
+    assert "QR" in created.stdout
+    core = subprocess.run(
+        [sys.executable, "-m", "secretsharing", "inspect", str(shares[0])], capture_output=True, text=True
+    )
+    assert core.returncode == 2 and "cannot verify signature algorithm(s) [2]" in core.stderr
+    core = subprocess.run(
+        [sys.executable, "-m", "secretsharing", "inspect", str(shares[0]), "--allow-unverified", "2"],
+        capture_output=True,
+        text=True,
+    )
+    assert "signatures verified [1]" in core.stdout and "NOT verified [2]" in core.stdout
+    plain = tmp_path / "plain.bin"
+    combined = subprocess.run(
+        [sys.executable, "-m", "secretsharing_files", "combine", *map(str, shares), "--out", str(plain)],
+        capture_output=True,
+        text=True,
+    )
+    assert combined.returncode == 0, combined.stderr
+    assert plain.read_bytes() == b"pq" * 10

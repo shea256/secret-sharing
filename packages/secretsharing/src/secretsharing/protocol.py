@@ -4,11 +4,11 @@ import hashlib
 import hmac
 import secrets
 import struct
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from dataclasses import field as dc_field
 
-from . import field
+from . import ed25519, field
 from .encoding import decode, encode
 from .errors import (
     DuplicateShare,
@@ -16,6 +16,7 @@ from .errors import (
     InsufficientShares,
     InvalidChecksum,
     InvalidShare,
+    InvalidSignature,
     MixedBackups,
     RecoveryError,
     UnsupportedSignature,
@@ -48,6 +49,30 @@ _FILE_FIELDS = struct.Struct(">B32s")
 _PAYLOAD_HEAD = struct.Struct(">BH")
 
 Rng = Callable[[int], bytes]
+Verifier = Callable[[bytes, bytes, bytes], bool]  # (public key, message, signature) -> ok
+
+
+@dataclass(frozen=True)
+class Signer:
+    """One required signature: algorithm ID, public key, and sign/verify callables."""
+
+    alg: int
+    public_key: bytes = dc_field(repr=False)
+    sign: Callable[[bytes], bytes] = dc_field(repr=False)
+    verify: Verifier = dc_field(repr=False)
+
+    def __post_init__(self) -> None:
+        if self.alg not in SIGNATURE_ALGS or len(self.public_key) != SIGNATURE_ALGS[self.alg][0]:
+            raise ValueError("Signer algorithm ID or public key length is not in the registry.")
+
+
+def ed25519_signer(seed: bytes | None = None) -> Signer:
+    """Fresh Ed25519 signer (algorithm 1). The seed lives only inside the closure."""
+    seed = ed25519.generate_seed() if seed is None else seed
+    return Signer(1, ed25519.public_key(seed), lambda message: ed25519.sign(seed, message), ed25519.verify)
+
+
+DEFAULT_VERIFIERS: Mapping[int, Verifier] = {1: ed25519.verify}
 
 
 @dataclass(frozen=True)
@@ -69,6 +94,7 @@ class ShareInfo:
     index: int
     capacity: int
     signature_algs: tuple[int, ...] = ()
+    verified_signatures: tuple[int, ...] = ()
     file_format: int | None = None
     file_hash: bytes | None = None
     version: int = VERSION
@@ -137,11 +163,6 @@ def _checksum(descriptor: bytes, index: int, value: bytes) -> bytes:
     return hashlib.sha256(CHECK_DOMAIN + descriptor + bytes([index]) + value).digest()[:CHECK_LENGTH]
 
 
-def estimate_share_size(length: int, *, capacity: int | None = None) -> int:
-    """Binary bytes per unsigned direct share, before Base32 and the prefix."""
-    return _capacity(length, capacity) + _HEAD.size + 1 + PAYLOAD_OVERHEAD + CHECK_LENGTH
-
-
 def _capacity(length: int, capacity: int | None) -> int:
     _integer(length, "Secret byte length", 0, MAX_CAPACITY)
     if capacity is None:
@@ -150,6 +171,12 @@ def _capacity(length: int, capacity: int | None) -> int:
     if capacity < length:
         raise ValueError("The secret exceeds the requested capacity.")
     return capacity
+
+
+def estimate_share_size(length: int, *, capacity: int | None = None, signed: bool = False) -> int:
+    """Binary bytes per direct share, before Base32 and the prefix."""
+    size = _capacity(length, capacity) + _HEAD.size + 1 + PAYLOAD_OVERHEAD + CHECK_LENGTH
+    return size + (1 + sum(SIGNATURE_ALGS[1]) if signed else 0)
 
 
 def _split(
@@ -162,14 +189,35 @@ def _split(
     file_format: int | None,
     file_hash: bytes | None,
     rng: Rng,
+    signed: bool,
+    signers: Iterable[Signer],
 ) -> Backup:
-    descriptor = _descriptor(protection, threshold, count, capacity, rng(16), file_format, file_hash)
+    set_id = rng(16)
+    all_signers = ([ed25519_signer(rng(32))] if signed else []) + list(signers)
+    if any(not isinstance(s, Signer) for s in all_signers):
+        raise TypeError("signers must be Signer instances.")
+    descriptor = _descriptor(
+        protection,
+        threshold,
+        count,
+        capacity,
+        set_id,
+        file_format,
+        file_hash,
+        [(s.alg, s.public_key) for s in all_signers],
+    )
     payload = _payload(descriptor, kind, data, capacity)
     shares = []
     for index, value in field.split(payload, threshold, count, coefficients=rng):
-        shares.append(encode(descriptor + bytes([index]) + value + _checksum(descriptor, index, value)))
+        body = descriptor + bytes([index]) + value
+        message = SIGN_DOMAIN + body
+        signatures = b"".join(s.sign(message) for s in all_signers)
+        shares.append(encode(body + _checksum(descriptor, index, value) + signatures))
     backup = Backup(tuple(shares), backup_id(descriptor), protection, threshold, count, capacity)
-    recovered = combine(backup.shares, expected_backup_id=backup.backup_id)
+    # Validate every share and one threshold subset before returning anything.
+    recovered = combine(
+        backup.shares, expected_backup_id=backup.backup_id, verifiers={s.alg: s.verify for s in all_signers}
+    )
     if not hmac.compare_digest(recovered.data, data) or recovered.kind != ("text" if kind else "bytes"):
         raise RecoveryError("Backup creation self-check failed; nothing was produced.")
     return backup
@@ -187,18 +235,29 @@ def split_bytes(
     threshold: int,
     shares: int,
     capacity: int | None = None,
+    signed: bool = False,
+    signers: Iterable[Signer] = (),
     _rng: Rng = secrets.token_bytes,
 ) -> Backup:
+    """Share bytes directly. ``signed`` adds a fresh Ed25519 signature to every share."""
     if not isinstance(secret, bytes):
         raise TypeError("Secret must be bytes.")
     threshold, shares = _counts(threshold, shares)
+    capacity = _capacity(len(secret), capacity)
     return _split(
-        secret, 0, threshold, shares, _capacity(len(secret), capacity), PROTECTION_DIRECT, None, None, _rng
+        secret, 0, threshold, shares, capacity, PROTECTION_DIRECT, None, None, _rng, signed, signers
     )
 
 
 def split_text(
-    secret: str, *, threshold: int, shares: int, capacity: int | None = None, _rng: Rng = secrets.token_bytes
+    secret: str,
+    *,
+    threshold: int,
+    shares: int,
+    capacity: int | None = None,
+    signed: bool = False,
+    signers: Iterable[Signer] = (),
+    _rng: Rng = secrets.token_bytes,
 ) -> Backup:
     if not isinstance(secret, str):
         raise TypeError("Secret must be text.")
@@ -207,9 +266,8 @@ def split_text(
     except UnicodeEncodeError:
         raise ValueError("Secret must be valid UTF-8 text.") from None
     threshold, shares = _counts(threshold, shares)
-    return _split(
-        data, 1, threshold, shares, _capacity(len(data), capacity), PROTECTION_DIRECT, None, None, _rng
-    )
+    capacity = _capacity(len(data), capacity)
+    return _split(data, 1, threshold, shares, capacity, PROTECTION_DIRECT, None, None, _rng, signed, signers)
 
 
 def split_file_key(
@@ -219,6 +277,8 @@ def split_file_key(
     shares: int,
     file_format: int,
     file_hash: bytes,
+    signed: bool = False,
+    signers: Iterable[Signer] = (),
     _rng: Rng = secrets.token_bytes,
 ) -> Backup:
     """Protection 2: share the 32-byte key of a file encrypted with a registered external format."""
@@ -229,10 +289,22 @@ def split_file_key(
     if not isinstance(file_hash, bytes) or len(file_hash) != 32:
         raise ValueError("File hash must be the 32-byte SHA-256 of the ciphertext.")
     threshold, shares = _counts(threshold, shares)
-    return _split(key, 0, threshold, shares, FILE_KEY_LENGTH, PROTECTION_FILE, file_format, file_hash, _rng)
+    return _split(
+        key,
+        0,
+        threshold,
+        shares,
+        FILE_KEY_LENGTH,
+        PROTECTION_FILE,
+        file_format,
+        file_hash,
+        _rng,
+        signed,
+        signers,
+    )
 
 
-def _parse(share: str, allow_unverified: Iterable[int]) -> _Parsed:
+def _parse(share: str, allow_unverified: Iterable[int], verifiers: Mapping[int, Verifier] | None) -> _Parsed:
     raw = decode(share)
     if len(raw) < _HEAD.size:
         raise InvalidShare("Truncated share.")
@@ -254,15 +326,17 @@ def _parse(share: str, allow_unverified: Iterable[int]) -> _Parsed:
         offset += _FILE_FIELDS.size
         if file_format not in FILE_FORMATS:
             raise InvalidShare("Unknown external file format ID.")
-    algs = []
+    signers: list[tuple[int, bytes]] = []
     for _ in range(sig_count):
         if len(raw) < offset + 1:
             raise InvalidShare("Truncated share.")
         alg = raw[offset]
         if alg not in SIGNATURE_ALGS:
             raise InvalidShare("Unknown signature algorithm ID; this share cannot be parsed.")
-        algs.append(alg)
-        offset += 1 + SIGNATURE_ALGS[alg][0]
+        key_length = SIGNATURE_ALGS[alg][0]
+        signers.append((alg, raw[offset + 1 : offset + 1 + key_length]))
+        offset += 1 + key_length
+    algs = [alg for alg, _ in signers]
     descriptor_end = offset
     value_length = capacity + PAYLOAD_OVERHEAD
     expected = descriptor_end + 1 + value_length + CHECK_LENGTH + sum(SIGNATURE_ALGS[a][1] for a in algs)
@@ -272,17 +346,32 @@ def _parse(share: str, allow_unverified: Iterable[int]) -> _Parsed:
     index = raw[descriptor_end]
     if not 1 <= index <= count:
         raise InvalidShare("Share index must be between 1 and the declared count.")
-    value = raw[descriptor_end + 1 : descriptor_end + 1 + value_length]
-    check = raw[descriptor_end + 1 + value_length : descriptor_end + 1 + value_length + CHECK_LENGTH]
-    if not hmac.compare_digest(_checksum(descriptor, index, value), check):
+    value_end = descriptor_end + 1 + value_length
+    value = raw[descriptor_end + 1 : value_end]
+    if not hmac.compare_digest(
+        _checksum(descriptor, index, value), raw[value_end : value_end + CHECK_LENGTH]
+    ):
         raise InvalidChecksum("Share checksum failed: check the copied share for typos.")
+    available = dict(DEFAULT_VERIFIERS) | dict(verifiers or {})
     allowed = set(allow_unverified)
-    unsupported = sorted({a for a in algs if a not in allowed})
+    unsupported = sorted({a for a in algs if a not in available and a not in allowed})
     if unsupported:
         raise UnsupportedSignature(
             f"This reader cannot verify signature algorithm(s) {unsupported}; "
             "pass allow_unverified to proceed without verification."
         )
+    message = SIGN_DOMAIN + raw[:value_end]
+    position = value_end + CHECK_LENGTH
+    verified = []
+    for alg, public_key in signers:
+        signature = raw[position : position + SIGNATURE_ALGS[alg][1]]
+        position += SIGNATURE_ALGS[alg][1]
+        if alg in available:
+            if not available[alg](public_key, message, signature):
+                raise InvalidSignature(
+                    f"Signature (algorithm {alg}) failed: the share was altered or damaged."
+                )
+            verified.append(alg)
     info = ShareInfo(
         backup_id(descriptor),
         protection,
@@ -291,15 +380,21 @@ def _parse(share: str, allow_unverified: Iterable[int]) -> _Parsed:
         index,
         capacity,
         tuple(algs),
+        tuple(verified),
         file_format,
         file_hash,
     )
     return _Parsed(info, descriptor, index, value)
 
 
-def inspect_share(share: str, *, allow_unverified: Iterable[int] = ()) -> ShareInfo:
-    """Validate a single share and return its public metadata. Never reconstructs."""
-    return _parse(share, allow_unverified).info
+def inspect_share(
+    share: str, *, allow_unverified: Iterable[int] = (), verifiers: Mapping[int, Verifier] | None = None
+) -> ShareInfo:
+    """Validate a single share and return its public metadata. Never reconstructs.
+
+    ``verifiers`` maps extra algorithm IDs to verify callables; Ed25519 is built in.
+    """
+    return _parse(share, allow_unverified, verifiers).info
 
 
 def combine(
@@ -307,8 +402,9 @@ def combine(
     *,
     expected_backup_id: str | None = None,
     allow_unverified: Iterable[int] = (),
+    verifiers: Mapping[int, Verifier] | None = None,
 ) -> Recovered:
-    if isinstance(shares, (str, bytes)) or not isinstance(shares, Iterable):
+    if isinstance(shares, str | bytes) or not isinstance(shares, Iterable):
         raise InvalidShare("Pass a collection of share strings.")
     allow = tuple(allow_unverified)
     parsed: list[_Parsed] = []
@@ -316,7 +412,7 @@ def combine(
     for share in shares:
         if len(parsed) >= MAX_SHARES:
             raise InvalidShare("At most 255 shares may be supplied.")
-        point = _parse(share, allow)
+        point = _parse(share, allow, verifiers)
         if parsed and point.descriptor != parsed[0].descriptor:
             raise MixedBackups("Shares belong to different backups.")
         if point.index in seen:
@@ -357,7 +453,7 @@ def combine(
             data.decode("utf-8")
         except UnicodeDecodeError:
             raise RecoveryError("Invalid text encoding in payload.") from None
-    unverified = tuple(a for a in info.signature_algs if a in allow)
+    unverified = tuple(a for a in info.signature_algs if a not in info.verified_signatures)
     return Recovered(
         data,
         "text" if kind else "bytes",

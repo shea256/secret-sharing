@@ -59,6 +59,16 @@ CASES = [
         "capacity": None,
     },
     {
+        "name": "text-2of2-signed-ed25519",
+        "seed": "vector-5",
+        "kind": "text",
+        "secret": "signed",
+        "threshold": 2,
+        "shares": 2,
+        "capacity": None,
+        "signed": True,
+    },
+    {
         "name": "file-key-2of3-age",
         "seed": "vector-4",
         "kind": "file-key",
@@ -79,6 +89,7 @@ def build(case: dict) -> dict:
             threshold=case["threshold"],
             shares=case["shares"],
             capacity=case["capacity"],
+            signed=case.get("signed", False),
             _rng=rng,
         )
     elif case["kind"] == "bytes":
@@ -99,7 +110,16 @@ def build(case: dict) -> dict:
             _rng=rng,
         )
     raw = decode(backup.shares[0])
-    descriptor_length = len(raw) - 1 - (backup.capacity + protocol.PAYLOAD_OVERHEAD) - protocol.CHECK_LENGTH
+    signature_length = sum(
+        protocol.SIGNATURE_ALGS[a][1] for a in protocol.inspect_share(backup.shares[0]).signature_algs
+    )
+    descriptor_length = (
+        len(raw)
+        - 1
+        - (backup.capacity + protocol.PAYLOAD_OVERHEAD)
+        - protocol.CHECK_LENGTH
+        - signature_length
+    )
     return {
         **case,
         "descriptor_hex": raw[:descriptor_length].hex(),

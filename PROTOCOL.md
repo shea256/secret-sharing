@@ -122,7 +122,7 @@ Filenames, directories, and labels are outside the format. The reference filenam
 | 3..127 | reserved | | | assigned only by a revision of this document |
 | 128..255 | private use | | | never assigned; not interoperable |
 
-IDs are immutable. Lengths are fixed by the ID; there are no length fields. A reader that does not know an `alg` cannot compute the share length and must reject the share.
+IDs are immutable. Lengths are fixed by the ID; there are no length fields. The reference core implements algorithm 1 in pure Python; algorithm 2 is provided by the `secretsharing-files` package. A creator that adds algorithm 2 must also include algorithm 1. A reader that does not know an `alg` cannot compute the share length and must reject the share.
 
 Verification policy is **all**: every listed signature must verify. A reader that knows an algorithm's lengths but has no verifier for it must refuse recovery by default. It may offer an explicit, non-default override that proceeds without verifying the unsupported algorithms; the result must then be labeled with the unverified algorithm IDs. A reader must never silently skip a signature, and must always verify every algorithm it supports.
 
@@ -144,7 +144,7 @@ For format 1, the identity string is bech32 (BIP-173 checksum, constant 1) with 
 ## 10. Creation
 
 1. Validate inputs: `2 <= threshold <= count <= 255`, data length `<= capacity <= 65535` (protection 1) or exactly 32 (protection 2).
-2. Draw `set_id` (16 bytes) from the CSPRNG. Build `D`.
+2. Draw `set_id` (16 bytes) from the CSPRNG, then any Ed25519 signing seed (32 bytes). Build `D`.
 3. Build `P` per section 5.
 4. Draw `(threshold - 1) × len(P)` coefficient bytes from the CSPRNG. Compute `Y` for every index `1..count`.
 5. Assemble each `S`, compute its checksum, then any signatures.

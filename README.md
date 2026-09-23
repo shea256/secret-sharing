@@ -6,8 +6,8 @@ This repository holds the [protocol v1 specification](PROTOCOL.md) and two Pytho
 
 | Package | Depends on | Purpose |
 |---|---|---|
-| `secretsharing` | standard library only | Direct Shamir sharing up to 64 KiB, share files, CLI, explicit legacy recovery |
-| `secretsharing-files` | `secretsharing`, `cryptography` | In-process [age](https://age-encryption.org) encryption for large files, automatic mode selection |
+| `secretsharing` | standard library only | Direct Shamir sharing up to 64 KiB, Ed25519 share signatures, share files, CLI, explicit legacy recovery |
+| `secretsharing-files` | `secretsharing`, `cryptography` | In-process [age](https://age-encryption.org) encryption for large files, automatic mode selection, ML-DSA-65 signatures |
 
 The core has no third-party dependencies on purpose: a reader written against the spec in any language, or this package on a bare Python install, will still work in twenty years. Large-file backups use age, which has independent Go and Rust implementations, so decryption never depends on this project.
 
@@ -18,6 +18,7 @@ The core has no third-party dependencies on purpose: a reader written against th
 - **Direct sharing (protection 1).** The secret itself is Shamir-shared byte-wise over GF(2^8). Fewer than `k` shares carry no information about it. A 16-byte digest inside the shared payload catches wrong or damaged shares after reconstruction, and a 4-byte checksum on each share catches typos before it.
 - **File backups (protection 2).** Files above 64 KiB are encrypted with age to a fresh X25519 identity, and the 32-byte identity is shared instead. Shares record the ciphertext's SHA-256, so recovery knows which file they protect. You need the encrypted file *and* `k` shares.
 - **Shares are text:** `SS:V1:B32:` followed by Base32, wrapped for printing and QR-friendly. Filenames are cosmetic.
+- **Optional signatures.** Ed25519 per share in the core; ML-DSA-65 post-quantum signatures via the extension.
 
 ## Install
 
@@ -25,7 +26,8 @@ Requires Python 3.11 or newer.
 
 ```sh
 pip install secretsharing          # core, no dependencies
-pip install secretsharing-files    # optional: in-process age encryption
+pip install 'secretsharing[qr]'    # optional SVG QR export
+pip install secretsharing-files    # optional: in-process age encryption, ML-DSA-65
 ```
 
 From this checkout, with [uv](https://docs.astral.sh/uv/):
@@ -101,7 +103,19 @@ For file backups: `split_file_key(key, threshold=, shares=, file_format=1, file_
 
 ### Signatures
 
-The wire format reserves per-share signature slots (Ed25519, ML-DSA-65) for backups whose holders might tamper with their shares. This release creates unsigned shares and implements no verifier. Signed shares from another implementation are rejected by default; pass `allow_unverified=[alg]` (CLI `--allow-unverified 1`) to recover anyway, and the result is labeled with the unverified algorithm IDs. Signatures are never skipped silently.
+`--signed` (API: `signed=True`) adds a per-share Ed25519 signature so that an altered share is identified before reconstruction rather than only detected afterwards. The implementation is pure Python (RFC 8032, cross-checked against pyca) and the signing key is generated per backup, used once, and discarded. Signatures cost 97 bytes per share.
+
+`secretsharing-files create --post-quantum` adds ML-DSA-65 alongside Ed25519; both must verify. Those shares are about 5 KiB each, so they suit files rather than paper. The core alone cannot verify ML-DSA-65: it refuses such shares unless you pass `--allow-unverified 2`, and then labels the result as not fully verified. Signatures are never skipped silently.
+
+### QR copies
+
+`--qr` writes an SVG QR code beside each share (`pip install 'secretsharing[qr]'`). Upper-case Base32 fits QR's alphanumeric mode, so a 32-byte secret is a comfortable symbol. Shares that exceed one symbol are reported and skipped.
+
+| 32-byte secret | Bytes per share | Base32 characters |
+|---|---:|---:|
+| unsigned | 81 | 130 |
+| signed (Ed25519) | 178 | 285 |
+| signed + ML-DSA-65 | 5,440 | 8,704 |
 
 ## Legacy shares (v0)
 

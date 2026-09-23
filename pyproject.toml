@@ -20,6 +20,7 @@ dev = [
     "hypothesis>=6",
     "ruff>=0.6",
     "coverage>=7",
+    "qrcode>=8",
     "secretsharing",
     "secretsharing-files",
 ]
