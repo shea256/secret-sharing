@@ -21,9 +21,14 @@ jobs:
       - run: uv run python spec/generate_vectors.py --check
       - name: Build both packages
         run: uv build --all-packages
-      - name: Core wheel imports with no dependencies
+      - name: Core wheel installs with zero dependencies and works
         run: |
           python -m venv "$RUNNER_TEMP/core"
-          "$RUNNER_TEMP/core/bin/pip" install -q dist/secretsharing-*.whl
-          "$RUNNER_TEMP/core/bin/pip" freeze | grep -v '^secretsharing==' | grep -v '^$' && exit 1 || true
-          "$RUNNER_TEMP/core/bin/secretsharing" --help > /dev/null
+          "$RUNNER_TEMP/core/bin/pip" install -q dist/secretsharing-1*.whl
+          count=$("$RUNNER_TEMP/core/bin/pip" list --format=freeze --exclude pip --exclude setuptools | wc -l)
+          test "$count" -eq 1 || { "$RUNNER_TEMP/core/bin/pip" list; exit 1; }
+          printf 'ci secret' > "$RUNNER_TEMP/s.bin"
+          "$RUNNER_TEMP/core/bin/secretsharing" create --input "$RUNNER_TEMP/s.bin" --threshold 2 --shares 3 \
+            --out "$RUNNER_TEMP/b" --yes --signed
+          "$RUNNER_TEMP/core/bin/secretsharing" combine "$RUNNER_TEMP"/b/*share01* "$RUNNER_TEMP"/b/*share03* --stdout \
+            | cmp - "$RUNNER_TEMP/s.bin"

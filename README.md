@@ -78,6 +78,8 @@ secretsharing-files create --file ./anything --threshold 2 --shares 3 --out ./ba
 secretsharing-files combine ./backup/shares/*.ss.txt --file ./backup/anything.age --out ./anything
 ```
 
+`secretsharing-files combine` without `--file` recovers a directly shared secret, with ML-DSA-65 verification available.
+
 Keep copies of the encrypted file. The shares alone cannot recover it.
 
 ## Python API
@@ -99,7 +101,7 @@ assert result.identity_verified
 
 Errors are subclasses of `secretsharing.ShareError`: `InvalidShare`, `UnsupportedVersion`, `InvalidChecksum`, `UnsupportedSignature`, `MixedBackups`, `DuplicateShare`, `InsufficientShares`, `IdentityMismatch`, `RecoveryError`. Messages and `repr` never include secret bytes or share text.
 
-For file backups: `split_file_key(key, threshold=, shares=, file_format=1, file_hash=)` in the core, and `create_file_backup`, `create_backup`, `recover_file` in `secretsharing_files`.
+For file backups: `split_file_key(key, threshold=, shares=, file_format=1, file_hash=)` in the core, and `create_file_backup`, `create_backup`, `recover`, `recover_file` in `secretsharing_files`.
 
 ### Signatures
 
