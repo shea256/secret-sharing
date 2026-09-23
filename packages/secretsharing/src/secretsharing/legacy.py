@@ -9,10 +9,8 @@ import hmac
 import string
 from dataclasses import dataclass, field
 
-from Cryptodome.Util.number import isPrime
-
 from .errors import InvalidShare, DuplicateShare, RecoveryError
-from .primes import STANDARD_PRIMES
+from .primes import STANDARD_PRIMES, is_probable_prime
 
 HEX = "0123456789abcdef"
 BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
@@ -86,7 +84,7 @@ def recover_secret(shares, *, format="hex", prime=None, original_length=None,
         # Deliberately preserve historical >= selection for legacy decoding.
         prime = next((p for p in STANDARD_PRIMES if max(y for _, y in points) <= p), None)
     if (type(prime) is not int or prime < 3 or prime.bit_length() > 1280
-            or (prime not in STANDARD_PRIMES and not isPrime(prime, false_positive_prob=1e-30))):
+            or (prime not in STANDARD_PRIMES and not is_probable_prime(prime))):
         raise InvalidShare("Supply a valid original prime (at most 1280 bits).")
     if any(not 1 <= x < prime or not 0 <= y < prime for x, y in points):
         raise InvalidShare("Coordinates do not fit the original field; supply the correct prime.")
