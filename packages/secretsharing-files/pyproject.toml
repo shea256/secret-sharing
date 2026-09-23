@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "secretsharing-files"
+version = "1.0.0a1"
+description = "Extension for secretsharing: in-process age encryption for large-file backups (protocol v1, protection 2)."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Ryan Shea" }]
+dependencies = [
+    "secretsharing>=1.0.0a1,<2",
+    "cryptography>=42",
+]
+
+[project.scripts]
+secretsharing-files = "secretsharing_files.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/secretsharing_files"]

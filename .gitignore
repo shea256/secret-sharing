@@ -36,3 +36,11 @@ nosetests.xml
 .pydevproject
 
 ignore
+
+# Local test/build tooling
+.pytest_cache/
+.venv/
+.coverage.*
+.hypothesis/
+htmlcov/
+.DS_Store

@@ -1,0 +1,29 @@
+name: Tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.12', '3.13', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pip install -e '.[qr]'
+      - run: python -m coverage run -m pytest
+      - run: python -m coverage combine
+      - run: python -m coverage report
+      - run: python -m build
+      - name: Test installed wheel outside the checkout
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/wheel-test"
+          "$RUNNER_TEMP/wheel-test/bin/python" -m pip install dist/*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/wheel-test/bin/python" -c "import secretsharing, sys; from pathlib import Path; assert Path(secretsharing.__file__).is_relative_to(Path(sys.prefix))"
+          "$RUNNER_TEMP/wheel-test/bin/python" "$GITHUB_WORKSPACE/examples/06_cli_walkthrough.py"

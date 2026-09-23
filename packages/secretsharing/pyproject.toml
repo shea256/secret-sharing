@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "secretsharing"
+version = "1.0.0a1"
+description = "Self-describing threshold secret sharing (protocol v1) with no third-party dependencies."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Ryan Shea" }]
+dependencies = []
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security :: Cryptography",
+]
+
+[project.urls]
+Homepage = "https://github.com/shea256/secret-sharing"
+
+[project.scripts]
+secretsharing = "secretsharing.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/secretsharing"]

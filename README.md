@@ -1,108 +1,214 @@
-Secret Sharing
-=============
+# Secret Sharing
 
-[![CircleCI](https://img.shields.io/circleci/project/blockstack/secret-sharing.svg)](https://circleci.com/gh/blockstack/secret-sharing)
-[![PyPI](https://img.shields.io/pypi/v/secretsharing.svg)](https://pypi.python.org/pypi/secretsharing/)
-[![PyPI](https://img.shields.io/pypi/dm/secretsharing.svg)](https://pypi.python.org/pypi/secretsharing/)
-[![PyPI](https://img.shields.io/pypi/l/secretsharing.svg)](https://github.com/onenameio/secret-sharing/blob/master/LICENSE)
-[![Slack](http://slack.blockstack.org/badge.svg)](http://slack.blockstack.org/)
+Offline, self-contained threshold backups for short text and binary secrets. Any chosen threshold of distinct shares recovers the exact original bytes. Each share includes its recovery settings and encrypted payload, so no separate encrypted recovery file is required.
 
-A library for sharding and sharing secrets (like Bitcoin private keys), using shamir's secret sharing scheme.
+**This development checkout declares package version 1.0.0rc1 and currently emits the SS2 development format**, initially called protocol v2. It introduces breaking API changes and is not an independently audited production release. See [PROTOCOL.md](PROTOCOL.md) for the implemented format and [legacy recovery](#legacy-recovery) for existing backups.
 
-## Installation
+The [protocol v1 design draft](PROTOCOL-V1-DRAFT.md) defines the direction for the first stable versioned protocol: direct sharing, configurable hybrid protection, and extensible signature algorithms. The original unversioned format is called **legacy v0** (historical package releases were 0.x, including 0.2.6). The planned v1 features are not implemented; the API and examples below describe the current SS2 development implementation. Existing SS2 tokens retain their encoding and recovery behavior.
 
-    >>> pip install secretsharing
+## Install
 
-## Sample Usage
+Requires Python 3.11 or newer. From this checkout:
 
-### Hex Secrets
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[qr]'
+python examples/01_quickstart.py
+```
 
-#### Splitting into shares
-    
-    >>> from secretsharing import SecretSharer
-    >>> shares = SecretSharer.split_secret("c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a", 2, 3)
-    ['1-58cbd30524507e7a198bdfeb69c8d87fd7d2c10e8d5408851404f7d258cbcea7', '2-ecdbdaea89d75f8e73bde77a46db821cd40f430d39a11c864e5a4868dcb403ed', '3-80ebe2cfef5e40a2cdefef0923ee2bb9d04bc50be5ee308788af98ff609c380a']
+The `[qr]` extra enables SVG QR export; use `-e .` if you do not need it. Activate `.venv` in each new terminal, or run `.venv/bin/python` directly. Examples can also load this checkout without installing the package if its dependencies are already available in the selected Python environment. Missing dependencies produce setup instructions, rather than an import traceback.
 
-#### Recovering from shares
+## Try it with sample data
 
-    >>> SecretSharer.recover_secret(shares[0:2])
-    'c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a'
+Start with the [runnable examples](examples/README.md). They use synthetic secrets, run offline, and are exercised by the test suite:
 
-### Plaintext Secrets
+```sh
+python examples/01_quickstart.py          # Exact text and binary recovery
+python examples/02_modes_and_padding.py   # Compare modes, padding, and sizes
+python examples/03_profiles_and_files.py  # Profiles, labeled files, renamed recovery
+python examples/04_expected_failures.py   # Learn the error types
+python examples/05_legacy_migration.py    # Verify an old backup before migration
+python examples/06_cli_walkthrough.py     # Run the actual CLI end-to-end
+```
 
-#### Splitting into shares
+File examples clean up temporary demo output by default. Use `python examples/03_profiles_and_files.py --out ./demo-backup --qr` to keep a sample backup and QR copies. Editable [sample profiles](examples/profiles.toml) cover all supported creation settings.
 
-    >>> from secretsharing import PlaintextToHexSecretSharer
-    >>> shares = PlaintextToHexSecretSharer.split_secret("correct horse battery staple", 2, 3)
-    ['1-7da6b11af146449675780434f6589230a3435d9ab59910354205996f508b8d0d', '2-fb4d6235e28c892cea70367c15ec3cbfed4cf4a417bd01e9812980f3ac97ddc8', '3-78f41350d3d2cdc35f6868c3357fe74f37568bad79e0f39dc04d687808a42d5a']
+## Python API
 
-#### Recovering from shares
+```python
+from secretsharing import split_text, combine, inspect_share
 
-    >>> PlaintextToHexSecretSharer.recover_secret(shares[0:2])
-    'correct horse battery staple'
+backup = split_text("00my secret\n", threshold=2, shares=3)
+# Store these separately. Each is an SS2: string.
+share_a, share_b, share_c = backup.shares
 
-### Bitcoin Private Keys
+info = inspect_share(share_a)  # Public metadata, without recovering the secret
+result = combine([share_c, share_a], expected_backup_id=backup.backup_id)
+assert result.text() == "00my secret\n"
+```
 
-Note: Bitcoin private keys are in [Base58 check](https://en.bitcoin.it/wiki/Base58Check_encoding) format.
+Use `split_bytes(data, threshold=..., shares=...)` for arbitrary bytes and `result.data` after recovery. Text uses UTF-8 without normalization; leading zeros, whitespace, and newlines survive exactly. Empty secrets are supported. The maximum secret size is 4096 **bytes**. Threshold and count must satisfy `2 <= threshold <= shares <= 255`.
 
-#### Splitting into reliably printable base58 shares
+### Settings
 
-    >>> from secretsharing import BitcoinToB58SecretSharer
-    >>> shares = BitcoinToB58SecretSharer.split_secret("5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS", 2, 3)
-    ['2-Bqni1ysZcXhFBhVVJLQgPimDUJrjBrzuvBmc6gPNPh1jyDcvM6uYUuH', '3-9xpMBerBCdHLKzCQ82fjVLfZ3Qt48sqa6nz1E3cc6eu3qUe58vaogU3', '4-85qzMKpnnisRUGuJwivnaxZtcWuP5tgEHQCQMQqqocnMhjfDvkG4t2o']
+| Setting | Default | Options |
+|---|---|---|
+| Threshold, share count | Explicit in the API | Wizard suggests 2-of-3 |
+| `mode` | `"standard"` | `"signed"` adds individual-share signatures |
+| `pad_to` | `None` (off) | 32, 64, 128, 256, 512, 1024, 2048, 4096 |
+| Public filename label | None | Explicit ASCII label, up to 48 characters |
+| Export | Text files | Optional SVG QR copies |
 
-#### Recovering from base58 shares
+Padding works in **either** mode. The secret must fit the selected capacity. Without padding, share size exposes the secret's byte length; padding hides that length within the selected capacity. The algorithm, randomness, key sizes, authentication tags, and verification rules are fixed by the protocol.
 
-    >>> BitcoinToB58SecretSharer.recover_secret(shares[0:2])
-    '5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS'
+```python
+backup = split_text(
+    "short password", threshold=3, shares=5,
+    mode="signed", pad_to=256,
+)
+```
 
-#### Splitting into reliably transcribable [base32](http://en.wikipedia.org/wiki/Base32) shares
+Standard uses a typo checksum and authenticated recovery. Signed also verifies individual shares against the backup's embedded signing key. Standard cannot generally identify a maliciously altered share whose checksum was recomputed, but recovery authentication will reject an incorrect reconstruction. A checksum passing is **not** proof of authenticity.
 
-    >>> from secretsharing import BitcoinToB32SecretSharer
-    >>> shares = BitcoinToB32SecretSharer.split_secret("5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS", 2, 3)
-    ['B-RJ6Y56OSUWDY5VAAGC6XLSTM64CAJ2LPBNB7NKATJCWC7VSHIP5DQIVMR6OGJ4GB', 'C-CT5R24XAR5B732JWYQKSYOYBSF5VHI73HLY24QCFRJR5XUW64C4JWYN6SRGWVCUG', 'D-T54KX27OPEAGZ7TNK5WOFK4WFPZKEXUHNKPWLWDXZQNYPT3WPV3P5IGQTD7HAJDG']
+| 32-byte secret | Binary bytes/share | Base32 characters including `SS2:` |
+|---|---:|---:|
+| Standard, no padding | 108 | 177 |
+| Signed, no padding | 200 | 324 |
+| Signed, padded to 256 bytes | 424 | 683 |
 
-#### Recovering from base32 shares
+Formatting separators are additional. `estimate_share_size(length, mode=..., pad_to=...)` returns the binary size.
 
-    >>> BitcoinToB32SecretSharer.recover_secret(shares[0:2])
-    '5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS'  
+### Identity and failures
 
-#### Splitting into reliably transcribable [zbase32](http://philzimmermann.com/docs/human-oriented-base-32-encoding.txt) shares
+`Backup.backup_id` is a full SHA-256 identifier of the encrypted envelope. Save it independently if you want to verify that a recovered backup is the one you originally created. An embedded signing key establishes consistency within a backup; it does not independently identify its creator. Without an expected ID, `combine` still verifies recovery but returns `identity_verified=False`.
 
-    >>> from secretsharing import BitcoinToZB32SecretSharer
-    >>> shares = BitcoinToZB32SecretSharer.split_secret("5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS", 2, 3)
-    ['b-aweuzkm9jmfgd7x4k595bzcm3er3epf4dprfwzpprqa3exbuocs9byn4owfuqbo', 'n-btetgqqu8doacarsbyfdzpyycyj6gfdeaaxrpfx33pdjk4ou1d5owjdmdi1iegm9', 'd-njh33f14q7smucmh8iq8uaewc8mzub3mzptrwsegfiz3hc1fozkkjtguc4trh6sq']
+`inspect_share` returns `ShareInfo` with version, mode, backup ID, threshold, count, index, capacity, and `verification` (`checksum_passed` or `signature_verified`). It never reconstructs the secret.
 
-#### Recovering from zbase32 shares
+`combine` checks **all** supplied shares. It rejects invalid input, mixed backups/modes and duplicate indices. It uses the lowest-index threshold subset after validation and never silently searches for a working combination after authentication fails. Catch the public `ShareError` subclasses (`InvalidShare`, `InvalidChecksum`, `InvalidSignature`, `DuplicateShare`, `MixedBackups`, `InsufficientShares`, `IdentityMismatch`, `RecoveryError`). Secret bytes and full shares are omitted from object representations and error messages.
 
-    >>> BitcoinToZB32SecretSharer.recover_secret(shares[0:2])
-    '5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS'    
+## Offline CLI
 
-### Raw integers
+All commands also work as `python -m secretsharing`.
 
-#### Splitting into shares
+```sh
+# Hidden text prompts, with a wizard suggesting 2-of-3:
+secretsharing create --out ./backup
 
-    >>> from secretsharing import secret_int_to_points, points_to_secret_int
-    >>> secret = 88985120633792790105905686761572077713049967498756747774697023364147812997770L
-    >>> shares = secret_int_to_points(secret, 2, 3)
-    [(1, 108834987130598118322155382953070549297972563210322923466700361825476188819879L), (2, 12892764390087251114834094135881113029625174256248535119246116278891435001755L), (3, 32742630886892579331083790327379584614547769967814710811249454740219810823864L)]
+# Exact binary file input; Standard and no padding are defaults:
+secretsharing create --input ./secret.bin --out ./backup \
+  --threshold 2 --shares 3
 
-#### Recovering from shares
+# Individual-share verification and length padding:
+secretsharing create --input ./secret.bin --out ./signed-backup \
+  --threshold 3 --shares 5 --mode signed --pad-to 256 \
+  --label family-backup --qr
+```
 
-    >>> points_to_secret_int(shares[0:2])
-    88985120633792790105905686761572077713049967498756747774697023364147812997770L
+The CLI displays effective settings and share sizes before generation. In a terminal it requests confirmation (`--yes` skips it). Scripts must supply threshold/count directly or through an explicitly selected profile. Text prompts disable echo; binary files are never trimmed or decoded. Original source filenames are **never** automatically exposed in share names.
 
-### Custom formats
+Creation performs an authenticated recovery self-check, writes each share separately, reads the files back, and emits a nonsecret `backup-id.json` card. A filename looks like:
 
-#### Splitting into shares
+```text
+family-backup--7e3a91bf20cd--share01-of05--need03--standard.ss2
+```
 
-    >>> from secretsharing import SecretSharer, base64_chars
-    >>> sharer_class = SecretSharer
-    >>> sharer_class.share_charset = base64_chars
-    >>> shares = sharer_class.split_secret("c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a", 2, 3)
-    ['B-JpxCTUQ9D+q93JglQM9yRinI2Cyxe92FTBSYa93ppfY', 'C-HAmR0pjHuHwL4rozXnFY05ysIJVqtf3pob1HCMaaZUm', 'D-EXbhV+1SYQ1Z6NxBfBM/YQ+PaP4j8B5N92X1pa9LJJ0']
+Without a label, it starts with the shortened ID. The shortened ID is a display aid; only the full ID is used for identity verification. Labels are outside the encoded share. **Renaming files or copying just an SS2: string cannot change recovery.**
 
-#### Recovering from shares
+```sh
+secretsharing inspect ./backup/*.ss2
 
-    >>> sharer_class.recover_secret(shares[0:2])
-    'c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a'
+# Check actual recovery without writing the secret:
+secretsharing verify ./backup/*.ss2 --card ./backup/backup-id.json
+
+# Write the authenticated original bytes to a new file:
+secretsharing combine ./backup/*.ss2 \
+  --card ./backup/backup-id.json --out ./recovered.bin
+
+# Or enter shares through hidden, single-line paste prompts:
+secretsharing combine --out ./recovered.bin
+```
+
+Keep the identification card independently if using it as an identity reference. `--expected-backup-id FULL_HEX_ID` is an alternative to `--card`. Neither is required for recovery. There are no recovery configuration profiles: each share contains the necessary protocol settings.
+
+Interactive recovery checks each share and reports progress. Identical duplicates do not count twice; conflicting duplicates stop recovery. Batch recovery fails if any supplied share is invalid. Output files are created only after authentication succeeds and existing files are never overwritten. Plaintext stdout output requires explicit `--stdout`.
+
+Files use private POSIX permissions (directories 0700, files 0600). Distribute shares to separate locations after export; leaving the full set together removes the benefit of the threshold. No telemetry, networking, automatic clipboard handling, or automatic deletion is performed. A failed export may leave a partial private directory; check the error and use a new destination when retrying.
+
+QR exports are copies of complete shares, generated locally at error-correction level M. Shares too large for one QR remain available as text files; the CLI reports the skipped QR copies.
+
+### Saved profiles
+
+Profiles are TOML files that you explicitly select; nothing is automatically loaded from the working directory or home directory.
+
+```toml
+[profiles.personal]
+threshold = 2
+shares = 3
+mode = "standard"
+qr = false
+
+[profiles.custody]
+threshold = 3
+shares = 5
+mode = "signed"
+pad_to = 256
+label = "family-backup" # PUBLIC filename label
+qr = true
+```
+
+```sh
+secretsharing create --input ./secret.bin --out ./backup \
+  --profile-file ./profiles.toml --profile custody \
+  --threshold 2 --shares 3 --mode standard --no-padding --no-label --no-qr
+```
+
+Precedence is **explicit arguments → selected profile → built-in defaults**. Unknown options and invalid types are rejected. Use `pad_to = 0` in TOML to disable padding. Use `--no-padding`, `--no-label`, and `--no-qr` to clear profile values explicitly.
+
+Python callers can use `load_profile` and `resolve_options` from `secretsharing.profiles`, then pass their resolved options to `split_bytes`/`split_text`. Use `export_backup` from `secretsharing.files` for labeled files and an identification card.
+
+## Legacy recovery
+
+The old `SecretSharer` classes, raw point APIs, and mutable charset settings are replaced by the current development API. Old unversioned shares (legacy v0) are read only through `secretsharing.legacy`; new legacy shares cannot be created. SS2 errors never trigger legacy fallback.
+
+```python
+from secretsharing.legacy import recover_secret
+
+candidate = recover_secret(
+    ["1-2", "2-0"], prime=7, original_length=4,
+)
+assert candidate.secret == "0004"
+assert not candidate.verified
+```
+
+Supported formats: `hex`, `text` (historical `string.printable`), `bitcoin-b58`, `bitcoin-b32`, and `bitcoin-zb32`. Python callers may supply explicit `share_charset` and `secret_charset` instead. Legacy recovery is bounded to 255 shares and fields of at most 1280 bits.
+
+When no original prime is provided, the historical prime guess is preserved and `inferred_prime=True`. This may recover the **wrong** secret. Even with the original prime, legacy shares cannot authenticate the result. Original string lengths may also have been lost. Supply `original_length` only when known.
+
+An independently known SHA-256 digest of the exact UTF-8 original string can be passed as `expected_sha256` to verify a candidate. A mismatch is an error. Never calculate this reference from the candidate itself.
+
+```sh
+secretsharing legacy recover old-share-1.txt old-share-2.txt \
+  --format hex --prime 7 --original-length 4 \
+  --expected-sha256 YOUR_INDEPENDENT_64_CHARACTER_DIGEST --out recovered.txt
+```
+
+Without an independent digest, CLI export requires deliberate `--accept-unverified` and is labeled unverified. To try migration with this development build, independently verify the recovered string first, then create an SS2 backup using `split_text`; use binary file creation only if you intentionally want a bytes payload. Retain original shares until replacement recovery is verified. Missing legacy field/length information cannot always be repaired.
+
+## Development
+
+```sh
+python -m pip install -r requirements-dev.txt
+python -m pip install -e '.[qr]'
+python -m pytest
+# Measure branches and include subprocess CLI executions:
+python -m coverage erase
+python -m coverage run -m pytest
+python -m coverage combine
+python -m coverage report
+python -m build
+```
+
+Tests cover all small-set threshold subsets, maximum counts, independent field reconstruction, fixed synthetic vectors, corruption, recomputed malicious checksums, signature stripping, legacy ambiguity, configuration precedence, renamed files, private permissions, and no-overwrite behavior. Hypothesis generates additional binary/Unicode secrets, settings, subsets, malformed encodings, and fragment forgeries. Failure-path tests exercise hidden-input refusal, cancellations, randomness failure, missing QR dependencies, invalid identity cards, and export readback failures. Every runnable example is tested.
+
+CI tests Python 3.11–3.14, enforces at least 90% combined line-and-branch coverage across the library and CLI (including subprocesses), builds distributions, and runs the CLI example against an installed wheel outside the checkout. Coverage measures exercised code, not cryptographic security. Independent protocol review and real-world recovery drills remain necessary before relying on this release for high-value backups; see [PROTOCOL.md](PROTOCOL.md) and [SECURITY.md](SECURITY.md).

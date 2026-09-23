@@ -1,0 +1,39 @@
+[project]
+name = "secret-sharing-workspace"
+version = "0"
+requires-python = ">=3.11"
+description = "Workspace root; not published."
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+secretsharing = { workspace = true }
+secretsharing-files = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "hypothesis>=6",
+    "ruff>=0.6",
+    "coverage>=7",
+    "secretsharing",
+    "secretsharing-files",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["packages/secretsharing/tests", "packages/secretsharing-files/tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.coverage.run]
+branch = true
+source = ["secretsharing", "secretsharing_files"]
