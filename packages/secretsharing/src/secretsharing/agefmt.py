@@ -93,7 +93,9 @@ def recipient_from_identity(identity: str) -> str:
     tools = find_age()
     if tools is None:
         raise FileNotFoundError("age and age-keygen are required; see https://age-encryption.org")
-    result = subprocess.run([tools[1], "-y"], input=identity + "\n", capture_output=True, text=True, check=True)
+    result = subprocess.run(
+        [tools[1], "-y"], input=identity + "\n", capture_output=True, text=True, check=True
+    )
     recipient = result.stdout.strip()
     if not recipient.startswith(RECIPIENT_HRP + "1"):
         raise ValueError("age-keygen did not return a recipient.")

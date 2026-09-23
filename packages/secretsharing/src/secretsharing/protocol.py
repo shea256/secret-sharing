@@ -5,7 +5,8 @@ import hmac
 import secrets
 import struct
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass, field as dc_field
+from dataclasses import dataclass
+from dataclasses import field as dc_field
 
 from . import field
 from .encoding import decode, encode
@@ -40,7 +41,9 @@ SIGN_DOMAIN = b"secretsharing/v1/sign\x00"
 SIGNATURE_ALGS: dict[int, tuple[int, int]] = {1: (32, 64), 2: (1952, 3309)}
 FILE_FORMATS: dict[int, str] = {1: "age-x25519"}
 
-_HEAD = struct.Struct(">2sBBBBBH16s")  # magic, version, protection, sig_count, threshold, count, capacity, set_id
+_HEAD = struct.Struct(
+    ">2sBBBBBH16s"
+)  # magic, version, protection, sig_count, threshold, count, capacity, set_id
 _FILE_FIELDS = struct.Struct(">B32s")
 _PAYLOAD_HEAD = struct.Struct(">BH")
 
@@ -179,12 +182,19 @@ def _counts(threshold: object, shares: object) -> tuple[int, int]:
 
 
 def split_bytes(
-    secret: bytes, *, threshold: int, shares: int, capacity: int | None = None, _rng: Rng = secrets.token_bytes
+    secret: bytes,
+    *,
+    threshold: int,
+    shares: int,
+    capacity: int | None = None,
+    _rng: Rng = secrets.token_bytes,
 ) -> Backup:
     if not isinstance(secret, bytes):
         raise TypeError("Secret must be bytes.")
     threshold, shares = _counts(threshold, shares)
-    return _split(secret, 0, threshold, shares, _capacity(len(secret), capacity), PROTECTION_DIRECT, None, None, _rng)
+    return _split(
+        secret, 0, threshold, shares, _capacity(len(secret), capacity), PROTECTION_DIRECT, None, None, _rng
+    )
 
 
 def split_text(
@@ -197,7 +207,9 @@ def split_text(
     except UnicodeEncodeError:
         raise ValueError("Secret must be valid UTF-8 text.") from None
     threshold, shares = _counts(threshold, shares)
-    return _split(data, 1, threshold, shares, _capacity(len(data), capacity), PROTECTION_DIRECT, None, None, _rng)
+    return _split(
+        data, 1, threshold, shares, _capacity(len(data), capacity), PROTECTION_DIRECT, None, None, _rng
+    )
 
 
 def split_file_key(
@@ -271,8 +283,17 @@ def _parse(share: str, allow_unverified: Iterable[int]) -> _Parsed:
             f"This reader cannot verify signature algorithm(s) {unsupported}; "
             "pass allow_unverified to proceed without verification."
         )
-    info = ShareInfo(backup_id(descriptor), protection, threshold, count, index, capacity,
-                     tuple(algs), file_format, file_hash)
+    info = ShareInfo(
+        backup_id(descriptor),
+        protection,
+        threshold,
+        count,
+        index,
+        capacity,
+        tuple(algs),
+        file_format,
+        file_hash,
+    )
     return _Parsed(info, descriptor, index, value)
 
 
@@ -307,8 +328,11 @@ def combine(
     first = parsed[0]
     info = first.info
     if expected_backup_id is not None:
-        if (not isinstance(expected_backup_id, str) or len(expected_backup_id) != 64
-                or any(c not in "0123456789abcdefABCDEF" for c in expected_backup_id)):
+        if (
+            not isinstance(expected_backup_id, str)
+            or len(expected_backup_id) != 64
+            or any(c not in "0123456789abcdefABCDEF" for c in expected_backup_id)
+        ):
             raise IdentityMismatch("Expected backup ID must be the full 64-character hexadecimal ID.")
         if not hmac.compare_digest(info.backup_id, expected_backup_id.lower()):
             raise IdentityMismatch("Backup does not match the expected backup ID.")
@@ -319,7 +343,9 @@ def combine(
     head, digest = payload[:-DIGEST_LENGTH], payload[-DIGEST_LENGTH:]
     expected_digest = hashlib.sha256(DIGEST_DOMAIN + first.descriptor + head).digest()[:DIGEST_LENGTH]
     if not hmac.compare_digest(digest, expected_digest):
-        raise RecoveryError("Recovery integrity check failed: one or more shares are wrong. No secret returned.")
+        raise RecoveryError(
+            "Recovery integrity check failed: one or more shares are wrong. No secret returned."
+        )
     kind, length = _PAYLOAD_HEAD.unpack_from(head)
     if kind not in (0, 1) or length > info.capacity or any(head[3 + length :]):
         raise RecoveryError("Invalid payload encoding.")
@@ -332,5 +358,13 @@ def combine(
         except UnicodeDecodeError:
             raise RecoveryError("Invalid text encoding in payload.") from None
     unverified = tuple(a for a in info.signature_algs if a in allow)
-    return Recovered(data, "text" if kind else "bytes", info.backup_id, info.protection,
-                     expected_backup_id is not None, info.file_format, info.file_hash, unverified)
+    return Recovered(
+        data,
+        "text" if kind else "bytes",
+        info.backup_id,
+        info.protection,
+        expected_backup_id is not None,
+        info.file_format,
+        info.file_hash,
+        unverified,
+    )

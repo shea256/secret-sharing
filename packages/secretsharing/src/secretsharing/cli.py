@@ -59,7 +59,7 @@ def _confirm(args: argparse.Namespace, message: str) -> None:
 
 def _report_export(backup, paths) -> None:
     print(f"Backup ID: {backup.backup_id}")
-    print(f"Record the backup ID separately; it is public and lets you verify recovery later.")
+    print("Record the backup ID separately; it is public and lets you verify recovery later.")
     print(f"Wrote {len(paths)} shares, any {backup.threshold} recover the secret:")
     for path in paths:
         print(f"  {path}")
@@ -71,7 +71,9 @@ def cmd_create(args: argparse.Namespace) -> int:
     if args.input:
         data = read_limited(args.input, MAX_CAPACITY)
         size = estimate_share_size(len(data), capacity=capacity)
-        _confirm(args, f"{args.threshold}-of-{args.shares} shares of {len(data)} bytes, {size} bytes per share.")
+        _confirm(
+            args, f"{args.threshold}-of-{args.shares} shares of {len(data)} bytes, {size} bytes per share."
+        )
         backup = split_bytes(data, threshold=args.threshold, shares=args.shares, capacity=capacity)
     else:
         if not sys.stdin.isatty():
@@ -89,8 +91,10 @@ def cmd_create(args: argparse.Namespace) -> int:
 def cmd_create_file(args: argparse.Namespace) -> int:
     tools = agefmt.find_age()
     if tools is None:
-        raise SystemExit("create-file needs the age and age-keygen binaries (https://age-encryption.org), "
-                         "or install secretsharing-files for in-process encryption.")
+        raise SystemExit(
+            "create-file needs the age and age-keygen binaries (https://age-encryption.org), "
+            "or install secretsharing-files for in-process encryption."
+        )
     source = Path(args.file)
     if not source.is_file():
         raise SystemExit(f"{source} is not a file.")
@@ -101,7 +105,9 @@ def cmd_create_file(args: argparse.Namespace) -> int:
     ciphertext = out / (source.name + ".age")
     subprocess.run([tools[0], "-r", recipient, "-o", str(ciphertext), str(source)], check=True)
     file_hash = hashlib.sha256(read_limited(ciphertext, 1 << 40)).digest()
-    backup = split_file_key(key, threshold=args.threshold, shares=args.shares, file_format=1, file_hash=file_hash)
+    backup = split_file_key(
+        key, threshold=args.threshold, shares=args.shares, file_format=1, file_hash=file_hash
+    )
     paths = export_backup(backup, out / "shares")
     print(f"Encrypted file: {ciphertext}")
     print(f"Ciphertext SHA-256: {file_hash.hex()}")
@@ -114,8 +120,10 @@ def cmd_inspect(args: argparse.Namespace) -> int:
     allow = _algs(args.allow_unverified)
     for path in args.shares:
         info = inspect_share(read_share(path), allow_unverified=allow)
-        line = (f"{Path(path).name}: share {info.index} of {info.count}, need {info.threshold}, "
-                f"capacity {info.capacity}, protection {info.protection}, backup {info.backup_id}")
+        line = (
+            f"{Path(path).name}: share {info.index} of {info.count}, need {info.threshold}, "
+            f"capacity {info.capacity}, protection {info.protection}, backup {info.backup_id}"
+        )
         if info.file_format is not None:
             line += f", file format {info.file_format}, ciphertext sha256 {info.file_hash.hex()}"
         if info.signature_algs:
@@ -125,26 +133,37 @@ def cmd_inspect(args: argparse.Namespace) -> int:
 
 
 def _recover(args: argparse.Namespace) -> Recovered:
-    result = combine(_load_shares(args.shares), expected_backup_id=args.expected_backup_id,
-                     allow_unverified=_algs(args.allow_unverified))
+    result = combine(
+        _load_shares(args.shares),
+        expected_backup_id=args.expected_backup_id,
+        allow_unverified=_algs(args.allow_unverified),
+    )
     if result.unverified_signatures:
-        print(f"WARNING: signature algorithm(s) {list(result.unverified_signatures)} were NOT verified.",
-              file=sys.stderr)
+        print(
+            f"WARNING: signature algorithm(s) {list(result.unverified_signatures)} were NOT verified.",
+            file=sys.stderr,
+        )
     if result.protection == PROTECTION_FILE and args.file:
         actual = hashlib.sha256(read_limited(args.file, 1 << 40)).digest()
         if actual != result.file_hash:
-            raise SystemExit("Ciphertext SHA-256 does not match the hash recorded in the shares. "
-                             "This is not the file this backup protects.")
+            raise SystemExit(
+                "Ciphertext SHA-256 does not match the hash recorded in the shares. "
+                "This is not the file this backup protects."
+            )
     return result
 
 
 def cmd_verify(args: argparse.Namespace) -> int:
     result = _recover(args)
-    identity = "verified against the supplied ID" if result.identity_verified else "not independently verified"
+    identity = (
+        "verified against the supplied ID" if result.identity_verified else "not independently verified"
+    )
     print(f"Recovery OK ({result.kind}, {len(result.data)} bytes). Backup ID {result.backup_id}, {identity}.")
     if result.protection == PROTECTION_FILE:
-        print(f"Protects ciphertext sha256 {result.file_hash.hex()}"
-              + (" (matches the supplied file)." if args.file else "; pass --file to check a file."))
+        print(
+            f"Protects ciphertext sha256 {result.file_hash.hex()}"
+            + (" (matches the supplied file)." if args.file else "; pass --file to check a file.")
+        )
     return 0
 
 
@@ -179,11 +198,18 @@ def cmd_combine(args: argparse.Namespace) -> int:
 
 
 def cmd_legacy(args: argparse.Namespace) -> int:
-    result = legacy.recover_secret(_load_shares(args.shares), format=args.format, prime=args.prime,
-                                   original_length=args.original_length, expected_sha256=args.expected_sha256)
+    result = legacy.recover_secret(
+        _load_shares(args.shares),
+        format=args.format,
+        prime=args.prime,
+        original_length=args.original_length,
+        expected_sha256=args.expected_sha256,
+    )
     if not result.verified and not args.accept_unverified:
-        raise SystemExit("Legacy candidate is UNVERIFIED (no independent digest matched). "
-                         "Pass --expected-sha256, or --accept-unverified to export anyway.")
+        raise SystemExit(
+            "Legacy candidate is UNVERIFIED (no independent digest matched). "
+            "Pass --expected-sha256, or --accept-unverified to export anyway."
+        )
     note = "verified" if result.verified else "UNVERIFIED"
     if result.inferred_prime:
         note += ", prime guessed historically (may be wrong)"
@@ -199,7 +225,9 @@ def cmd_legacy(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="secretsharing", description="Offline threshold secret backups (protocol v1).")
+    parser = argparse.ArgumentParser(
+        prog="secretsharing", description="Offline threshold secret backups (protocol v1)."
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     def counts(p):
@@ -211,15 +239,23 @@ def build_parser() -> argparse.ArgumentParser:
     def recovery(p):
         p.add_argument("shares", nargs="*", help="share files; omit to paste shares on stdin")
         p.add_argument("--expected-backup-id", help="independently recorded 64-hex backup ID")
-        p.add_argument("--allow-unverified", metavar="ALGS",
-                       help="comma-separated signature algorithm IDs to leave unverified (labels the result)")
+        p.add_argument(
+            "--allow-unverified",
+            metavar="ALGS",
+            help="comma-separated signature algorithm IDs to leave unverified (labels the result)",
+        )
         p.add_argument("--file", help="ciphertext to check against a file-key backup")
 
     p = sub.add_parser("create", help="split text (hidden prompt) or a file's bytes")
     counts(p)
     p.add_argument("--input", help="binary file to split exactly; omit for a hidden text prompt")
-    p.add_argument("--capacity", type=int, choices=(0, *PAD_CHOICES), metavar="N",
-                   help="pad to N bytes to hide the exact length (power of two 32..65536; 0 = off)")
+    p.add_argument(
+        "--capacity",
+        type=int,
+        choices=(0, *PAD_CHOICES),
+        metavar="N",
+        help="pad to N bytes to hide the exact length (power of two 32..65536; 0 = off)",
+    )
     p.set_defaults(func=cmd_create)
 
     p = sub.add_parser("create-file", help="encrypt a large file with age and split its key")
@@ -236,7 +272,9 @@ def build_parser() -> argparse.ArgumentParser:
     recovery(p)
     p.set_defaults(func=cmd_verify)
 
-    p = sub.add_parser("combine", help="recover the secret to a new file, or an age identity for file backups")
+    p = sub.add_parser(
+        "combine", help="recover the secret to a new file, or an age identity for file backups"
+    )
     recovery(p)
     p.add_argument("--out", help="new output path (secret bytes, or age identity for file backups)")
     p.add_argument("--stdout", action="store_true", help="print the secret bytes instead of writing a file")

@@ -9,16 +9,20 @@ import hmac
 import string
 from dataclasses import dataclass, field
 
-from .errors import InvalidShare, DuplicateShare, RecoveryError
+from .errors import DuplicateShare, InvalidShare, RecoveryError
 from .primes import STANDARD_PRIMES, is_probable_prime
 
 HEX = "0123456789abcdef"
 BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 ZBASE32 = "ybndrfg8ejkmcpqxot1uwisza345h769"
-FORMATS = {"hex": (HEX, HEX), "text": (HEX, string.printable),
-           "bitcoin-b58": (BASE58, BASE58), "bitcoin-b32": (BASE32, BASE58),
-           "bitcoin-zb32": (ZBASE32, BASE58)}
+FORMATS = {
+    "hex": (HEX, HEX),
+    "text": (HEX, string.printable),
+    "bitcoin-b58": (BASE58, BASE58),
+    "bitcoin-b32": (BASE32, BASE58),
+    "bitcoin-zb32": (ZBASE32, BASE58),
+}
 
 
 @dataclass(frozen=True)
@@ -29,8 +33,12 @@ class LegacyResult:
 
 
 def _charset(charset, *, share=False):
-    if (not isinstance(charset, str) or not 2 <= len(charset) <= 256
-            or len(set(charset)) != len(charset) or (share and "-" in charset)):
+    if (
+        not isinstance(charset, str)
+        or not 2 <= len(charset) <= 256
+        or len(set(charset)) != len(charset)
+        or (share and "-" in charset)
+    ):
         raise ValueError("Invalid legacy character set.")
 
 
@@ -55,8 +63,16 @@ def _to_string(value, charset):
     return "".join(reversed(digits))
 
 
-def recover_secret(shares, *, format="hex", prime=None, original_length=None,
-                   expected_sha256=None, share_charset=None, secret_charset=None) -> LegacyResult:
+def recover_secret(
+    shares,
+    *,
+    format="hex",
+    prime=None,
+    original_length=None,
+    expected_sha256=None,
+    share_charset=None,
+    secret_charset=None,
+) -> LegacyResult:
     if not isinstance(shares, (list, tuple)) or not 2 <= len(shares) <= 255:
         raise InvalidShare("Supply between 2 and 255 legacy share strings.")
     if format not in FORMATS:
@@ -83,8 +99,12 @@ def recover_secret(shares, *, format="hex", prime=None, original_length=None,
     if inferred:
         # Deliberately preserve historical >= selection for legacy decoding.
         prime = next((p for p in STANDARD_PRIMES if max(y for _, y in points) <= p), None)
-    if (type(prime) is not int or prime < 3 or prime.bit_length() > 1280
-            or (prime not in STANDARD_PRIMES and not is_probable_prime(prime))):
+    if (
+        type(prime) is not int
+        or prime < 3
+        or prime.bit_length() > 1280
+        or (prime not in STANDARD_PRIMES and not is_probable_prime(prime))
+    ):
         raise InvalidShare("Supply a valid original prime (at most 1280 bits).")
     if any(not 1 <= x < prime or not 0 <= y < prime for x, y in points):
         raise InvalidShare("Coordinates do not fit the original field; supply the correct prime.")
@@ -108,10 +128,15 @@ def recover_secret(shares, *, format="hex", prime=None, original_length=None,
             secret = secret_charset[0] * (original_length - len(secret)) + secret
     verified = False
     if expected_sha256 is not None:
-        if (not isinstance(expected_sha256, str) or len(expected_sha256) != 64
-                or any(c not in "0123456789abcdefABCDEF" for c in expected_sha256)):
+        if (
+            not isinstance(expected_sha256, str)
+            or len(expected_sha256) != 64
+            or any(c not in "0123456789abcdefABCDEF" for c in expected_sha256)
+        ):
             raise ValueError("Expected digest must be a full SHA-256 hexadecimal value.")
-        verified = hmac.compare_digest(hashlib.sha256(secret.encode("utf-8")).hexdigest(), expected_sha256.lower())
+        verified = hmac.compare_digest(
+            hashlib.sha256(secret.encode("utf-8")).hexdigest(), expected_sha256.lower()
+        )
         if not verified:
             raise RecoveryError("Legacy candidate does not match the independent expected digest.")
     return LegacyResult(secret, verified, inferred)

@@ -1,7 +1,6 @@
 import secrets
 
 import pytest
-
 from secretsharing import encoding
 from secretsharing.errors import InvalidShare, UnsupportedVersion
 
@@ -17,7 +16,9 @@ def test_round_trip_and_prefix():
 def test_formatting_noise_is_accepted():
     raw = bytes(range(64))
     text = encoding.encode(raw)
-    noisy = "  " + text[:10].lower() + "-".join(text[10:][i : i + 5] for i in range(0, len(text) - 10, 5)).lower()
+    noisy = (
+        "  " + text[:10].lower() + "-".join(text[10:][i : i + 5] for i in range(0, len(text) - 10, 5)).lower()
+    )
     noisy = noisy.replace("-", "\r\n", 3).replace("-", "\t", 1) + "   \r\n"
     assert encoding.decode(noisy) == raw
     assert encoding.decode(encoding.format_lines(text)) == raw

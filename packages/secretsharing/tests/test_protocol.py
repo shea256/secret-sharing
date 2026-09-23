@@ -5,7 +5,6 @@ import secrets
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
-
 from secretsharing import (
     DuplicateShare,
     IdentityMismatch,
@@ -18,12 +17,13 @@ from secretsharing import (
     UnsupportedVersion,
     combine,
     estimate_share_size,
+    field,
     inspect_share,
+    protocol,
     split_bytes,
     split_file_key,
     split_text,
 )
-from secretsharing import field, protocol
 from secretsharing.encoding import decode, encode
 
 
@@ -174,7 +174,15 @@ def _signed_shares(alg: int, sig_len: int, pk_len: int, unknown: bool = False):
     payload = protocol._payload(descriptor, 0, b"key!", 4)
     out = []
     for index, value in field.split(payload, 2, 2, coefficients=rng):
-        out.append(encode(descriptor + bytes([index]) + value + protocol._checksum(descriptor, index, value) + b"\x22" * sig_len))
+        out.append(
+            encode(
+                descriptor
+                + bytes([index])
+                + value
+                + protocol._checksum(descriptor, index, value)
+                + b"\x22" * sig_len
+            )
+        )
     return out
 
 

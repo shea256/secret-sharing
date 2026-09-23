@@ -2,7 +2,6 @@ import hashlib
 import random
 
 import pytest
-
 from secretsharing.errors import DuplicateShare, InvalidShare, RecoveryError
 from secretsharing.legacy import FORMATS, _to_int, _to_string, recover_secret
 from secretsharing.primes import STANDARD_PRIMES, is_probable_prime
@@ -44,7 +43,10 @@ def test_printable_text_format_and_leading_zero_loss():
     value = _to_int("00hi", charset)
     shares = legacy_split(value, 2, 3, STANDARD_PRIMES[8], FORMATS["text"][0])
     assert recover_secret(shares[:2], format="text", prime=STANDARD_PRIMES[8]).secret == "hi"
-    assert recover_secret(shares[:2], format="text", prime=STANDARD_PRIMES[8], original_length=4).secret == "00hi"
+    assert (
+        recover_secret(shares[:2], format="text", prime=STANDARD_PRIMES[8], original_length=4).secret
+        == "00hi"
+    )
 
 
 def test_invalid_inputs():

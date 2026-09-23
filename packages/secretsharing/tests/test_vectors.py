@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 
 import pytest
-
 from secretsharing import combine, inspect_share
 from secretsharing.encoding import decode
 

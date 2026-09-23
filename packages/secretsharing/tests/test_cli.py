@@ -1,19 +1,21 @@
 import hashlib
-import os
 import secrets
 import stat
 import subprocess
 import sys
 
 import pytest
-
 from secretsharing import agefmt, split_text
 from secretsharing.encoding import format_lines
 
 
 def run(*args, stdin=None, check=True):
-    result = subprocess.run([sys.executable, "-m", "secretsharing", *map(str, args)],
-                            capture_output=True, input=stdin, text=stdin is None or isinstance(stdin, str))
+    result = subprocess.run(
+        [sys.executable, "-m", "secretsharing", *map(str, args)],
+        capture_output=True,
+        input=stdin,
+        text=stdin is None or isinstance(stdin, str),
+    )
     if check and result.returncode != 0:
         raise AssertionError(f"exit {result.returncode}: {result.stderr}")
     return result
@@ -27,7 +29,11 @@ def test_file_round_trip_permissions_and_rename(tmp_path):
     result = run("create", "--input", source, "--threshold", "2", "--shares", "3", "--out", out, "--yes")
     backup_id = next(line.split()[-1] for line in result.stdout.splitlines() if line.startswith("Backup ID"))
     files = sorted(out.glob("*.ss.txt"))
-    assert len(files) == 3 and files[0].name.startswith(backup_id[:12]) and files[0].name.endswith("--2of3.ss.txt")
+    assert (
+        len(files) == 3
+        and files[0].name.startswith(backup_id[:12])
+        and files[0].name.endswith("--2of3.ss.txt")
+    )
     assert stat.S_IMODE(out.stat().st_mode) == 0o700
     assert all(stat.S_IMODE(f.stat().st_mode) == 0o600 for f in files)
     renamed = tmp_path / "anything.txt"
@@ -39,8 +45,22 @@ def test_file_round_trip_permissions_and_rename(tmp_path):
     assert recovered.read_bytes() == secret
     assert run("combine", files[0], renamed, "--stdout", stdin=b"", check=True).stdout == secret
     assert run("combine", files[0], renamed, "--out", recovered, check=False).returncode == 1  # no overwrite
-    assert run("create", "--input", source, "--threshold", "2", "--shares", "3", "--out", out, "--yes",
-               check=False).returncode == 1
+    assert (
+        run(
+            "create",
+            "--input",
+            source,
+            "--threshold",
+            "2",
+            "--shares",
+            "3",
+            "--out",
+            out,
+            "--yes",
+            check=False,
+        ).returncode
+        == 1
+    )
     assert run("combine", files[0], check=False).returncode == 2
     assert run("combine", files[0], files[1], check=False).returncode == 1  # needs --out or --stdout
 
@@ -55,19 +75,37 @@ def test_stdin_shares_and_wrong_id(tmp_path):
 
 
 def test_text_create_requires_terminal(tmp_path):
-    result = run("create", "--threshold", "2", "--shares", "2", "--out", tmp_path / "x", stdin="", check=False)
+    result = run(
+        "create", "--threshold", "2", "--shares", "2", "--out", tmp_path / "x", stdin="", check=False
+    )
     assert result.returncode == 1 and "hidden terminal prompt" in result.stderr
 
 
 def test_legacy_recover(tmp_path):
     out = tmp_path / "legacy.txt"
     digest = hashlib.sha256(b"0004").hexdigest()
-    run("legacy", "recover", "--prime", "7", "--original-length", "4", "--expected-sha256", digest,
-        "--out", out, stdin="1-2\n2-0\n\n")
+    run(
+        "legacy",
+        "recover",
+        "--prime",
+        "7",
+        "--original-length",
+        "4",
+        "--expected-sha256",
+        digest,
+        "--out",
+        out,
+        stdin="1-2\n2-0\n\n",
+    )
     assert out.read_text() == "0004"
     unverified = run("legacy", "recover", "--prime", "7", "--stdout", stdin="1-2\n2-0\n\n", check=False)
     assert unverified.returncode == 1 and "UNVERIFIED" in unverified.stderr
-    assert run("legacy", "recover", "--prime", "7", "--stdout", "--accept-unverified", stdin="1-2\n2-0\n\n").stdout == "4"
+    assert (
+        run(
+            "legacy", "recover", "--prime", "7", "--stdout", "--accept-unverified", stdin="1-2\n2-0\n\n"
+        ).stdout
+        == "4"
+    )
 
 
 @pytest.mark.skipif(agefmt.find_age() is None, reason="age binaries not installed")
@@ -86,7 +124,9 @@ def test_create_file_and_decrypt(tmp_path):
     assert run("verify", shares[0], shares[1], "--file", wrong, check=False).returncode == 1
     identity = tmp_path / "identity.txt"
     plain = tmp_path / "plain.bin"
-    assert run("combine", shares[1], shares[2], "--file", wrong, "--out", identity, check=False).returncode == 1
+    assert (
+        run("combine", shares[1], shares[2], "--file", wrong, "--out", identity, check=False).returncode == 1
+    )
     assert not identity.exists()
     run("combine", shares[1], shares[2], "--file", ciphertext, "--out", identity, "--decrypt", plain)
     assert plain.read_bytes() == big.read_bytes()

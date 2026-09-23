@@ -7,23 +7,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: ['3.11', '3.12', '3.13', '3.14']
+        python: ["3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: python -m pip install -r requirements-dev.txt
-      - run: python -m pip install -e '.[qr]'
-      - run: python -m coverage run -m pytest
-      - run: python -m coverage combine
-      - run: python -m coverage report
-      - run: python -m build
-      - name: Test installed wheel outside the checkout
-        shell: bash
+      - name: Install age for interop tests
+        run: sudo apt-get update -q && sudo apt-get install -y -q age
+      - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run pytest -q
+      - run: uv run python spec/generate_vectors.py --check
+      - name: Build both packages
+        run: uv build --all-packages
+      - name: Core wheel imports with no dependencies
         run: |
-          python -m venv "$RUNNER_TEMP/wheel-test"
-          "$RUNNER_TEMP/wheel-test/bin/python" -m pip install dist/*.whl
-          cd "$RUNNER_TEMP"
-          "$RUNNER_TEMP/wheel-test/bin/python" -c "import secretsharing, sys; from pathlib import Path; assert Path(secretsharing.__file__).is_relative_to(Path(sys.prefix))"
-          "$RUNNER_TEMP/wheel-test/bin/python" "$GITHUB_WORKSPACE/examples/06_cli_walkthrough.py"
+          python -m venv "$RUNNER_TEMP/core"
+          "$RUNNER_TEMP/core/bin/pip" install -q dist/secretsharing-*.whl
+          "$RUNNER_TEMP/core/bin/pip" freeze | grep -v '^secretsharing==' | grep -v '^$' && exit 1 || true
+          "$RUNNER_TEMP/core/bin/secretsharing" --help > /dev/null

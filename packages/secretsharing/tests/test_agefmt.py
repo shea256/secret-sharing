@@ -2,7 +2,6 @@ import secrets
 import subprocess
 
 import pytest
-
 from secretsharing import agefmt
 
 
